@@ -29,22 +29,24 @@ export default function Metric({ label, value, detail, sparkData, sparkColor, co
   };
 
   return (
-    <div className={`metric-card ${className}`}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-        <p style={{ margin: 0, fontSize: "14px", fontWeight: 500, color: "var(--text-tertiary)" }}>
+    <div className={`metric ${className}`}>
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-sm font-medium m-0" style={{ color: "var(--color-text-tertiary)" }}>
           {label}
         </p>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div className="flex gap-2 items-center">
           {confidence && getConfidenceBadge(confidence)}
           {sparkData && <Sparkline data={sparkData} color={sparkColor} />}
         </div>
       </div>
-      <p style={{ margin: "1rem 0", fontSize: "32px", fontWeight: 700, color: "var(--text-primary)" }}>
+      <p className="text-3xl font-bold my-4" style={{ color: "var(--color-text-primary)" }}>
         {value}
       </p>
-      <p style={{ margin: 0, fontSize: "14px", color: "var(--text-tertiary)", lineHeight: 1.6 }}>
-        {detail}
-      </p>
+      {detail && (
+        <p className="text-sm m-0 leading-relaxed" style={{ color: "var(--color-text-tertiary)" }}>
+          {detail}
+        </p>
+      )}
     </div>
   );
 }

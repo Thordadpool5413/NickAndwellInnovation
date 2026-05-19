@@ -13,11 +13,11 @@ export default function Card({ title, eyebrow, children, className = "" }: CardP
   return (
     <div className={`card ${className}`}>
       {eyebrow && (
-        <h6 style={{ marginBottom: "0.5rem", marginTop: 0, color: "var(--accent-blue)" }}>
+        <h6 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--color-accent)" }}>
           {eyebrow}
         </h6>
       )}
-      <h3 style={{ marginTop: 0, marginBottom: "1.5rem", fontSize: "18px", fontWeight: 600, color: "var(--text-primary)" }}>
+      <h3 className="text-lg font-semibold mb-6" style={{ color: "var(--color-text-primary)" }}>
         {title}
       </h3>
       <div>{children}</div>

@@ -134,7 +134,7 @@ export default function ScenarioManager() {
                       ? "border-blue-500 bg-blue-950/50"
                       : "border-blue-500 bg-blue-50"
                     : dark
-                      ? "border-slate-600 bg-slate-700 hover:bg-slate-650"
+                      ? "border-slate-600 bg-slate-700 hover:bg-slate-600"
                       : "border-slate-300 bg-white hover:bg-slate-50"
                 }
               `}

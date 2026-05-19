@@ -1,14 +1,9 @@
 'use client';
 
 import { create } from "zustand";
-
-interface Scenario {
-  conversionRate: number;
-  hhCapture: number[];
-  woundCapture: number[];
-  therapyCapture: number[];
-  marginOverrides: Record<string, number>;
-}
+import { persist } from "zustand/middleware";
+import { DEFAULT_SCENARIO } from "../data/constants";
+import type { Scenario } from "../data/constants";
 
 interface SavedScenario {
   id: string;
@@ -38,15 +33,9 @@ interface ScenarioStore {
   };
 }
 
-const DEFAULT_SCENARIO: Scenario = {
-  conversionRate: 0.75,
-  hhCapture: [0.1, 0.15, 0.2],
-  woundCapture: [0.25, 0.35, 0.45],
-  therapyCapture: [0.2, 0.3, 0.4],
-  marginOverrides: {},
-};
-
-export const useScenarioStore = create<ScenarioStore>((set, get) => ({
+export const useScenarioStore = create<ScenarioStore>()(
+  persist(
+    (set, get) => ({
   currentScenario: DEFAULT_SCENARIO,
   scenarios: [],
   activeScenarioId: null,
@@ -142,4 +131,9 @@ export const useScenarioStore = create<ScenarioStore>((set, get) => ({
       activeScenario: state.scenarios.find((s) => s.id === state.activeScenarioId),
     };
   },
-}));
+}),
+    {
+      name: "andwell-scenarios",
+    }
+  )
+);

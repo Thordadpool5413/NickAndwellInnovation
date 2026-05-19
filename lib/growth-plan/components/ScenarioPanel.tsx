@@ -1,6 +1,7 @@
 'use client';
 
 import React from "react";
+import { useDarkMode } from "./DarkModeContext";
 import { DEFAULT_SCENARIO } from "../data/constants";
 import Button from "./Button";
 
@@ -15,9 +16,10 @@ interface SliderRowProps {
 }
 
 function SliderRow({ label, value, min, max, step, format, onChange }: SliderRowProps) {
+  const { dark } = useDarkMode();
   return (
     <div className="flex items-center gap-4">
-      <label className="w-44 shrink-0 text-sm font-semibold text-slate-700">{label}</label>
+      <label className={`w-44 shrink-0 text-sm font-semibold ${dark ? "text-slate-300" : "text-slate-700"}`}>{label}</label>
       <input
         type="range"
         min={min}
@@ -25,9 +27,9 @@ function SliderRow({ label, value, min, max, step, format, onChange }: SliderRow
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-slate-200 accent-blue-600"
+        className={`h-2 flex-1 cursor-pointer appearance-none rounded-full ${dark ? "bg-slate-600" : "bg-slate-200"} accent-blue-600`}
       />
-      <span className="w-16 text-right text-sm font-black text-slate-950">{format(value)}</span>
+      <span className={`w-16 text-right text-sm font-black ${dark ? "text-slate-100" : "text-slate-950"}`}>{format(value)}</span>
     </div>
   );
 }
@@ -44,6 +46,7 @@ interface ScenarioPanelProps {
 }
 
 export default function ScenarioPanel({ scenario, setScenario }: ScenarioPanelProps) {
+  const { dark } = useDarkMode();
   const pct = (v: number) => `${(v * 100).toFixed(0)}%`;
 
   const update = (key: string, value: number) =>
@@ -62,12 +65,16 @@ export default function ScenarioPanel({ scenario, setScenario }: ScenarioPanelPr
     JSON.stringify(scenario.woundCapture) === JSON.stringify(DEFAULT_SCENARIO.woundCapture) &&
     JSON.stringify(scenario.therapyCapture) === JSON.stringify(DEFAULT_SCENARIO.therapyCapture);
 
+  const containerClass = dark
+    ? "rounded-3xl border border-slate-600 bg-slate-800/60 p-6 shadow-sm"
+    : "rounded-3xl border border-blue-200 bg-blue-50/60 p-6 shadow-sm";
+
   return (
-    <div className="rounded-3xl border border-blue-200 bg-blue-50/60 p-6 shadow-sm">
+    <div className={containerClass}>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-blue-700">Scenario Controls</p>
-          <p className="mt-1 text-sm text-slate-600">Adjust assumptions to see real-time financial impact</p>
+          <p className={`text-xs font-black uppercase tracking-[0.22em] ${dark ? "text-blue-400" : "text-blue-700"}`}>Scenario Controls</p>
+          <p className={`mt-1 text-sm ${dark ? "text-slate-400" : "text-slate-600"}`}>Adjust assumptions to see real-time financial impact</p>
         </div>
         {!isDefault && (
           <Button
@@ -91,8 +98,8 @@ export default function ScenarioPanel({ scenario, setScenario }: ScenarioPanelPr
           onChange={(v) => update("conversionRate", v)}
         />
 
-        <div className="border-t border-blue-200 pt-3">
-          <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-500">Home Healthcare capture</p>
+        <div className={`border-t ${dark ? "border-slate-600" : "border-blue-200"} pt-3`}>
+          <p className={`mb-2 text-xs font-black uppercase tracking-wide ${dark ? "text-slate-400" : "text-slate-500"}`}>Home Healthcare capture</p>
           {["Year 1", "Year 2", "Year 3"].map((label, i) => (
             <SliderRow
               key={label}
@@ -107,8 +114,8 @@ export default function ScenarioPanel({ scenario, setScenario }: ScenarioPanelPr
           ))}
         </div>
 
-        <div className="border-t border-blue-200 pt-3">
-          <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-500">Mobile Wound capture</p>
+        <div className={`border-t ${dark ? "border-slate-600" : "border-blue-200"} pt-3`}>
+          <p className={`mb-2 text-xs font-black uppercase tracking-wide ${dark ? "text-slate-400" : "text-slate-500"}`}>Mobile Wound capture</p>
           {["Year 1", "Year 2", "Year 3"].map((label, i) => (
             <SliderRow
               key={label}
@@ -123,8 +130,8 @@ export default function ScenarioPanel({ scenario, setScenario }: ScenarioPanelPr
           ))}
         </div>
 
-        <div className="border-t border-blue-200 pt-3">
-          <p className="mb-2 text-xs font-black uppercase tracking-wide text-slate-500">Therapy Care capture</p>
+        <div className={`border-t ${dark ? "border-slate-600" : "border-blue-200"} pt-3`}>
+          <p className={`mb-2 text-xs font-black uppercase tracking-wide ${dark ? "text-slate-400" : "text-slate-500"}`}>Therapy Care capture</p>
           {["Year 1", "Year 2", "Year 3"].map((label, i) => (
             <SliderRow
               key={label}

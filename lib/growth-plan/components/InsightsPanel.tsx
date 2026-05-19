@@ -207,23 +207,28 @@ export default function InsightsPanel({ insights, onActionClick }: InsightsPanel
         {categories.map((cat) => {
           const Icon = cat.icon;
           const count = (insights as any)[cat.id]?.length || 0;
+          const activeLight: Record<string, string> = {
+            blue: "border-blue-600 text-blue-600",
+            amber: "border-amber-600 text-amber-600",
+            red: "border-red-600 text-red-600",
+            green: "border-green-600 text-green-600",
+          };
+          const activeDark: Record<string, string> = {
+            blue: "border-blue-500 text-blue-400",
+            amber: "border-amber-500 text-amber-400",
+            red: "border-red-500 text-red-400",
+            green: "border-green-500 text-green-400",
+          };
+          const isActive = expandedCategory === cat.id;
+          const activeClass = dark ? activeDark[cat.color] : activeLight[cat.color];
+          const inactiveClass = dark
+            ? "border-transparent text-slate-400 hover:text-slate-300"
+            : "border-transparent text-slate-600 hover:text-slate-700";
           return (
             <button
               key={cat.id}
               onClick={() => setExpandedCategory(cat.id)}
-              className={`
-                flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap
-                border-b-2 -mb-px transition-colors
-                ${
-                  expandedCategory === cat.id
-                    ? dark
-                      ? `border-${cat.color}-500 text-${cat.color}-400`
-                      : `border-${cat.color}-600 text-${cat.color}-600`
-                    : dark
-                      ? "border-transparent text-slate-400 hover:text-slate-300"
-                      : "border-transparent text-slate-600 hover:text-slate-700"
-                }
-              `}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors ${isActive ? activeClass : inactiveClass}`}
             >
               <Icon className="h-4 w-4" />
               {count > 0 && <span className="text-xs">{count}</span>}
