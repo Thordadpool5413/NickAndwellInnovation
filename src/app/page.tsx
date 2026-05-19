@@ -1,11 +1,14 @@
 "use client"
 
-import { useState } from "react"
 import { BarChart3, Crosshair, TrendingUp, Building2, Rocket, Activity } from "lucide-react"
-import { mockCompetitors, maineOverview } from "@/lib/data"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { mockCompetitors, mockCounties, mockBattlecards, maineOverview } from "@/lib/data"
+import { useLens } from "@/lib/lens-context"
+
+const COLORS = ["#3b82f6", "#22c55e", "#eab308", "#ef4444", "#a855f7", "#06b6d4"]
 
 export default function DashboardPage() {
-  const [maineData] = useState(maineOverview)
+  const { lens } = useLens()
   const stats = [
     { label: "Maine Competitors Tracked", value: `${mockCompetitors.length}`, change: "All with Maine presence", icon: Crosshair, color: "text-blue-400" },
     { label: "Avg Win Rate", value: "59%", change: "Across all Maine competitors", icon: BarChart3, color: "text-green-400" },
@@ -15,16 +18,23 @@ export default function DashboardPage() {
     { label: "System Health", value: "All OK", change: "8/8 API services", icon: Activity, color: "text-emerald-400" },
   ]
 
+  const shareData = mockBattlecards.map(b => ({ name: b.competitorName, share: b.maineMarketShare, winRate: b.winRate }))
+  const countyData = [...mockCounties].sort((a, b) => b.priorityScore - a.priorityScore).slice(0, 8)
+  const lensLabel = { executive: "Executive", "sales-leader": "Sales Leader", "sales-rep": "Sales Rep", admin: "Admin" }[lens]
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Andwell Command Center</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-white">Command Center</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900 text-blue-300">{lensLabel} Lens</span>
+          </div>
           <p className="text-zinc-500 text-sm mt-1">Maine-focused competitive intelligence and growth planning</p>
         </div>
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm">
           <span className="text-zinc-500">Maine Market</span>
-          <span className="text-white ml-2 font-semibold">{maineData.population.toLocaleString()} residents</span>
+          <span className="text-white ml-2 font-semibold">{maineOverview.population.toLocaleString()} residents</span>
         </div>
       </div>
 
@@ -47,51 +57,56 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <h3 className="font-semibold text-white mb-3">Maine Intelligence Feed</h3>
-          <div className="space-y-3">
-            {[
-              { title: "Amedisys entering Maine market", source: "Investor Day", time: "Today", priority: "high" },
-              { title: "MaineHealth wound pilot in 5 coastal counties", source: "Press Release", time: "1d ago", priority: "high" },
-              { title: "Northern Light expands telehealth in Aroostook", source: "Annual Report", time: "2d ago", priority: "medium" },
-              { title: "Gentiva restructures Maine operations", source: "Internal", time: "3d ago", priority: "medium" },
-              { title: "CMS releases Maine home health star ratings", source: "CMS Data", time: "5d ago", priority: "low" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-3 pb-3 border-b border-zinc-800 last:border-0">
-                <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                  item.priority === "high" ? "bg-red-500" : item.priority === "medium" ? "bg-amber-500" : "bg-blue-500"
-                }`} />
-                <div className="min-w-0">
-                  <p className="text-sm text-zinc-300 truncate">{item.title}</p>
-                  <p className="text-xs text-zinc-600">{item.source} · {item.time}</p>
-                </div>
-              </div>
-            ))}
+          <h3 className="font-semibold text-white mb-4">Maine Market Share</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={shareData} layout="vertical">
+                <XAxis type="number" tick={{ fill: "#71717a", fontSize: 12 }} />
+                <YAxis dataKey="name" type="category" tick={{ fill: "#d4d4d8", fontSize: 11 }} width={100} />
+                <Tooltip
+                  contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: "8px", color: "#fff" }}
+                />
+                <Bar dataKey="share" name="Market Share" radius={[0, 4, 4, 0]}>
+                  {shareData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <h3 className="font-semibold text-white mb-3">Maine Demographics</h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <span className="text-sm text-zinc-400">Population 65+</span>
-              <span className="text-sm text-white font-medium">{maineData.over65Percent}%</span>
-            </div>
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <span className="text-sm text-zinc-400">Rural Population</span>
-              <span className="text-sm text-white font-medium">{maineData.ruralPercent}%</span>
-            </div>
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <span className="text-sm text-zinc-400">Home Health Patients/yr</span>
-              <span className="text-sm text-white font-medium">{maineData.homeHealthPatients.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-              <span className="text-sm text-zinc-400">Unserved Rural Need</span>
-              <span className="text-sm text-white font-medium">{maineData.unservedRuralPatients.toLocaleString()}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-zinc-400">State Agencies</span>
-              <span className="text-sm text-white font-medium">{maineData.stateAgencies}</span>
-            </div>
+          <h3 className="font-semibold text-white mb-4">Win Rate vs Competitors</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={shareData}>
+                <XAxis dataKey="name" tick={{ fill: "#d4d4d8", fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+                <YAxis domain={[0, 100]} tick={{ fill: "#71717a", fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: "8px", color: "#fff" }}
+                />
+                <Bar dataKey="winRate" name="Win Rate" radius={[4, 4, 0, 0]}>
+                  {shareData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <h3 className="font-semibold text-white mb-4">Top Priority Maine Counties by Demand</h3>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={countyData}>
+              <XAxis dataKey="county" tick={{ fill: "#d4d4d8", fontSize: 11 }} />
+              <YAxis tick={{ fill: "#71717a", fontSize: 12 }} />
+              <Tooltip
+                contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: "8px", color: "#fff" }}
+              />
+              <Bar dataKey="homeHealthDemand" name="Home Health" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="mobileWoundDemand" name="Wound Care" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="therapyCareDemand" name="Therapy" fill="#eab308" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

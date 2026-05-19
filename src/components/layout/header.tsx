@@ -1,13 +1,15 @@
 "use client"
 
-import { Lens } from "@/lib/types"
+import { useLens } from "@/lib/lens-context"
 import { LensSwitcher } from "./lens-switcher"
 
-export function Header({ lens, onLensChange }: { lens: Lens; onLensChange: (l: Lens) => void }) {
+export function Header() {
+  const { lens, setLens } = useLens()
+
   return (
     <header className="h-14 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
-        <LensSwitcher current={lens} onSwitch={onLensChange} />
+        <LensSwitcher current={lens} onSwitch={setLens} />
       </div>
       <div className="flex items-center gap-3">
         <span className="text-xs text-zinc-500">v1.0.0</span>

@@ -2,24 +2,28 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { BarChart3, Crosshair, Shield, FileText, MessageSquare, BookOpen, TrendingUp, Building2, Rocket, Activity } from "lucide-react"
+import { useLens } from "@/lib/lens-context"
+import { BarChart3, Crosshair, Shield, FileText, MessageSquare, BookOpen, TrendingUp, Building2, Rocket, Activity, Settings } from "lucide-react"
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: BarChart3 },
-  { href: "/competitor-intake", label: "Competitor Intake", icon: Crosshair },
-  { href: "/evidence-matrix", label: "Evidence Matrix", icon: Shield },
-  { href: "/battlecards", label: "Battlecards", icon: FileText },
-  { href: "/reports", label: "Reports", icon: FileText },
-  { href: "/ask-the-hub", label: "Ask the Hub", icon: MessageSquare },
-  { href: "/catalog", label: "Andwell Catalog", icon: BookOpen },
-  { href: "/growth-command", label: "Growth Command", icon: TrendingUp },
-  { href: "/board-room", label: "Board Room", icon: Building2 },
-  { href: "/launch-plan", label: "Launch Plan", icon: Rocket },
-  { href: "/system-check", label: "System Check", icon: Activity },
+const allNavItems = [
+  { href: "/", label: "Dashboard", icon: BarChart3, lenses: ["executive", "sales-leader", "sales-rep", "admin"] as const },
+  { href: "/competitor-intake", label: "Competitor Intake", icon: Crosshair, lenses: ["executive", "sales-leader", "admin"] as const },
+  { href: "/evidence-matrix", label: "Evidence Matrix", icon: Shield, lenses: ["executive", "sales-leader", "sales-rep", "admin"] as const },
+  { href: "/battlecards", label: "Battlecards", icon: FileText, lenses: ["executive", "sales-leader", "sales-rep", "admin"] as const },
+  { href: "/reports", label: "Reports", icon: FileText, lenses: ["executive", "sales-leader", "admin"] as const },
+  { href: "/ask-the-hub", label: "Ask the Hub", icon: MessageSquare, lenses: ["executive", "sales-leader", "sales-rep", "admin"] as const },
+  { href: "/catalog", label: "Andwell Catalog", icon: BookOpen, lenses: ["sales-leader", "sales-rep", "admin"] as const },
+  { href: "/growth-command", label: "Growth Command", icon: TrendingUp, lenses: ["executive", "sales-leader", "admin"] as const },
+  { href: "/board-room", label: "Board Room", icon: Building2, lenses: ["executive", "admin"] as const },
+  { href: "/launch-plan", label: "Launch Plan", icon: Rocket, lenses: ["executive", "sales-leader", "admin"] as const },
+  { href: "/system-check", label: "System Check", icon: Activity, lenses: ["admin"] as const },
+  { href: "/admin", label: "Settings", icon: Settings, lenses: ["admin"] as const },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { lens } = useLens()
+  const navItems = allNavItems.filter((item) => item.lenses.some((l) => l === lens))
 
   return (
     <aside className="w-60 bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen">
