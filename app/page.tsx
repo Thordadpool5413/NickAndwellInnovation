@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { LoadingState, EmptyState, ErrorState } from '../components/StateViews';
 import { andwellCatalog } from '../lib/andwell';
 import { expertPromptModules, fullCompetitiveIntelligenceInstruction } from '../lib/expert-prompts';
 import { buildGrowthRows, buildStaffingPlan, growthDefaultScenario, launchTimeline, rollupGrowthByService, summarizeGrowth } from '../lib/growth-plan';
@@ -133,11 +134,6 @@ function TagList({ items }: { items?: string[] }) {
   const safeItems = (items || []).filter(Boolean);
   if (!safeItems.length) return <p className="muted">No items returned yet.</p>;
   return <div className="tagCloud">{safeItems.map((item) => <span key={item}>{item}</span>)}</div>;
-}
-
-function ProgressSteps({ busy, phase }: { busy: boolean; phase: string }) {
-  const steps = ['Validate URLs', 'Crawl pages', 'Extract evidence', 'Run AI', 'Build brief', 'Save report'];
-  return <div className="progressRail">{steps.map((step) => <span key={step} className={busy && phase === step ? 'active' : ''}>{step}</span>)}</div>;
 }
 
 export default function Page() {
@@ -299,16 +295,16 @@ export default function Page() {
         <p>{roleGuidance[roleView].headline}</p>
       </div>
       <nav className="nav proNav">{nav.map((item) => <button key={item.key} className={view === item.key ? 'active' : ''} onClick={() => setView(item.key)}><strong>{item.label}</strong><small>{item.note}</small></button>)}</nav>
-      <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.08)', padding: '1rem' }}>
-        <button className="btn primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { window.location.href = '/growth-plan'; }}><strong>Growth Plan Dashboard</strong></button>
+      <div className="mt-auto border-t border-white/10 p-4">
+        <button className="btn primary w-full justify-center" onClick={() => { window.location.href = '/growth-plan'; }}><strong>Growth Plan Dashboard</strong></button>
       </div>
     </aside>
     <main className="main proMain">
       <header className="head proHead"><div><small>{currentReport?.expertBrief ? `Foremost Expert | ${currentReport.expertBrief.expertScore}` : currentReport?.aiEnabled ? `AI Enhanced | ${currentReport.aiModel || 'OpenAI'}` : 'Stable Build'}</small><h2>{nav.find((item) => item.key === view)?.label || 'Andwell Innovation'}</h2></div><div className="row"><Badge tone={busy ? 'amber' : 'green'}>{phase}</Badge><button className="btn" disabled={busy} onClick={refreshServerState}>Load Server Data</button><button className="btn" onClick={() => setView('diagnostics')}>System Check</button></div></header>
       <div className="content proContent">
-        {error && <div className="error" style={{ marginBottom: 16 }}>{error}</div>}
-        {notice && <div className="notice" style={{ marginBottom: 16 }}>{notice}</div>}
-        {busy && <ProgressSteps busy={busy} phase={phase} />}
+        {error && <div className="error mb-4">{error}</div>}
+        {notice && <div className="notice mb-4">{notice}</div>}
+        {busy && <LoadingState message={phase} />}
         {view === 'dashboard' && <Dashboard stats={stats} currentReport={currentReport} roleView={roleView} topThreat={topThreat} topOpportunity={topOpportunity} setView={setView} exportJson={exportJson} clearLegacyBrowserStorage={clearLegacyBrowserStorage} />}
         {view === 'growth' && <GrowthCommand rows={growthRows} totals={growthTotals} serviceRollup={growthServiceRollup} scenario={growthScenario} setScenario={setGrowthScenario} setView={setView} />}
         {view === 'board' && <BoardRoom currentReport={currentReport} totals={growthTotals} rows={growthRows} topThreat={topThreat} topOpportunity={topOpportunity} setView={setView} />}

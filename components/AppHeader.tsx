@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { BarChart3, Grid3X3, Home, LayoutDashboard } from "lucide-react";
 
 const navItems = [
-  { href: "/command-center", label: "Command Center", icon: LayoutDashboard },
+  { href: "/", label: "Command Center", icon: LayoutDashboard },
   { href: "/growth-plan", label: "Growth Plan", icon: BarChart3 },
 ];
 
 export default function AppHeader() {
   const pathname = usePathname();
   const isGrowthPlan = pathname?.startsWith("/growth-plan");
-  const isCommandCenter = pathname === "/" || pathname?.startsWith("/command-center");
+  const isCommandCenter = pathname === "/";
   const isHome = pathname === "/";
 
   return (

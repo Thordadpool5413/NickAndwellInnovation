@@ -6,17 +6,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "postbuild": "node scripts/patch-standalone-server.js",
     "build:next": "next build",
     "build:hostinger": "next build",
     "build:strict": "CIH_STRICT_BUILD=1 next build",
     "typecheck": "tsc --noEmit",
-    "start": "node .next/standalone/server.js",
-    "serve": "node .next/standalone/server.js",
-    "hostinger:start": "node .next/standalone/server.js",
-    "start:hostinger": "node .next/standalone/server.js",
-    "start:custom": "node server.js",
-    "start:standalone": "node .next/standalone/server.js"
+    "start": "node server.js",
+    "serve": "node server.js",
+    "hostinger:start": "node server.js",
+    "start:hostinger": "node server.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
