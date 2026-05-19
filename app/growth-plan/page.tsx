@@ -69,7 +69,7 @@ function Dashboard() {
   const insights = useMemo(() => insightsEngine.getAllInsights(), [insightsEngine]);
 
   return (
-    <div className="container-page" style={{ height: "100vh" }}>
+    <div className="container-page" style={{ minHeight: "calc(100vh - 56px)" }}>
       <aside className="container-sidebar">
         <div style={{ padding: "2rem 1.5rem", borderBottom: "1px solid var(--color-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
