@@ -10,10 +10,10 @@
     "build:hostinger": "next build",
     "build:strict": "cross-env CIH_STRICT_BUILD=1 next build",
     "typecheck": "tsc --noEmit",
-    "start": "node server.js",
-    "serve": "node server.js",
-    "hostinger:start": "node server.js",
-    "start:hostinger": "node server.js"
+    "start": "node app.js",
+    "serve": "node app.js",
+    "hostinger:start": "node app.js",
+    "start:hostinger": "node app.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",

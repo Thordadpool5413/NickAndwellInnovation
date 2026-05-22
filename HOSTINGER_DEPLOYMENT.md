@@ -11,16 +11,15 @@ Package manager: npm
 Build command: npm run build
 Start command: npm start
 
-Do not use app.js or index.js startup aliases.
 Do not set HOST to the public domain.
 Let Hostinger manage PORT.
 
 Current package scripts:
 
 build: next build
-start: node server.js
+start: node app.js
 
-The custom `server.js` starts Next.js with Hostinger's provided `PORT` and binds to `0.0.0.0` by default. This avoids the 503 loop caused by Hostinger starting the wrong file or serving static fallback HTML instead of the Node.js app.
+`app.js` is the Hostinger-friendly entry file. It delegates to the custom `server.js`, which starts Next.js with Hostinger's provided `PORT` and binds to `0.0.0.0` by default. This avoids the 503 loop caused by Hostinger starting the wrong file or serving static fallback HTML instead of the Node.js app.
 
 After deployment, verify these JSON endpoints:
 

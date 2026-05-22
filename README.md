@@ -14,7 +14,7 @@ The app keeps the visible command center wired to real Next.js API routes. Supab
 - Executive report preview with readiness blockers and print support
 - Server-side APIs for analysis, competitors, reports, reviews, catalog, diagnostics, runtime, health, and version checks
 - Supabase production persistence, with MongoDB/local JSON fallback
-- Hostinger Node.js startup through `server.js`
+- Hostinger Node.js startup through `app.js`, which delegates to `server.js`
 
 ## Local Development
 
@@ -37,7 +37,7 @@ npm run build
 npm start
 ```
 
-`npm run build` creates the optimized Next.js production build. `npm start` runs `server.js`, which launches Next on Hostinger's provided `PORT`.
+`npm run build` creates the optimized Next.js production build. `npm start` runs `app.js`, which delegates to `server.js` and launches Next on Hostinger's provided `PORT`.
 
 ## Hostinger Settings
 
@@ -80,7 +80,7 @@ Let Hostinger manage `PORT`. Do not set `HOST` to the public domain.
 2. Use branch `main`.
 3. Use Node.js 20.x.
 4. Use `npm run build` as the build command.
-5. Use `npm start` as the start command.
+5. Use `npm start` as the start command. If Hostinger asks for a startup file, use `app.js`.
 6. Add the environment variables above.
 7. Deploy.
 
