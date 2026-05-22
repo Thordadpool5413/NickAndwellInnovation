@@ -274,6 +274,8 @@ export function getAITransportDiagnostics() {
   return {
     provider: provider.name,
     configured: isAIExtractionConfigured(),
+    model: provider.model || 'gpt-4o-mini',
+    transport: provider.transport || 'openai',
     maxPagesForPrompt,
     maxCharsPerPage,
     maxOutputTokens,
