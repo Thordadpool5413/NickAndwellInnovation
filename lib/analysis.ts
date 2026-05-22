@@ -1,6 +1,103 @@
 import { andwellCatalog } from './andwell';
 import { buildExpertBrief } from './expert-engine';
-import type { CompetitorAnalysis, CompetitorInput, Confidence, CrawledPage, ExecutiveInsight, Finding, IntelligenceReport, Status, SubserviceFinding, CompetitorScore, ThreatLevel } from './types';
+import { cleanProviderName, nameFromUrl } from './provider-identity';
+import type { CompetitorAnalysis, CompetitorInput, Confidence, CrawledPage, EvidenceSource, ExecutiveInsight, Finding, IntelligenceReport, MatrixScore, Status, SubserviceFinding, CompetitorScore, ThreatLevel } from './types';
+
+import { semanticScore } from './embedding';
+
+const useSemanticMatching = process.env.USE_SEMANTIC_MATCHING === '1';
+
+// --- Scoring constants ---
+const PHRASE_SCORE_EXACT_MULTI = 8;
+const PHRASE_SCORE_EXACT_SINGLE = 4;
+const PHRASE_SCORE_HIGH_RATIO = 3;
+const PHRASE_SCORE_LOW_RATIO = 1;
+const PHRASE_SCORE_MISS = 0;
+const PHRASE_RATIO_HIGH = 0.85;
+const PHRASE_RATIO_LOW = 0.65;
+
+const CLASSIFY_CLEARLY_OFFERED = 12;
+const CLASSIFY_MENTIONED_ONLY = 7;
+const CLASSIFY_RELATED = 3;
+const CLASSIFY_MIN_MATCHED_FOR_CLEAR = 2;
+const CLASSIFY_MAX_MATCHED = 10;
+
+const PAGE_QUALITY_SERVICE_PROGRAM = 28;
+const PAGE_QUALITY_REFERRAL_ELIGIBILITY = 24;
+const PAGE_QUALITY_LOCATION = 18;
+const PAGE_QUALITY_ABOUT = 12;
+const PAGE_QUALITY_NEWS_BLOG = 8;
+const PAGE_QUALITY_LOW_VALUE = 2;
+const PAGE_QUALITY_DEFAULT = 10;
+
+const STATUS_STRENGTH_CLEARLY_OFFERED = 100;
+const STATUS_STRENGTH_MENTIONED_ONLY = 62;
+const STATUS_STRENGTH_RELATED = 48;
+const STATUS_STRENGTH_UNCLEAR = 26;
+const STATUS_STRENGTH_NONE = 0;
+
+const CONFIDENCE_STRENGTH_HIGH = 100;
+const CONFIDENCE_STRENGTH_MODERATE = 66;
+const CONFIDENCE_STRENGTH_LOW = 34;
+const CONFIDENCE_STRENGTH_NEEDS_REVIEW = 20;
+const CONFIDENCE_STRENGTH_NONE = 0;
+
+// --- Matrix score weights ---
+const MATRIX_STATUS_WEIGHT = 0.58;
+const MATRIX_CONFIDENCE_WEIGHT = 0.28;
+const MATRIX_SOURCE_BASE = 14;
+const MATRIX_SOURCE_PER_UNIT = 7;
+const MATRIX_EVIDENCE_WEIGHT = 0.34;
+const MATRIX_SOURCE_QUALITY_WEIGHT = 0.16;
+const MATRIX_MATCH_WEIGHT = 0.2;
+const MATRIX_DIFFERENTIATION_WEIGHT = 0.18;
+const MATRIX_RISK_WEIGHT = 0.12;
+
+// --- Review risk constants ---
+const RISK_CLEAR_HIGH_CONF_WITH_SOURCE = 12;
+const RISK_NOT_FOUND_PUBLICLY = 70;
+const RISK_LOW_CONFIDENCE = 82;
+const RISK_DEFAULT = 48;
+
+// --- Differentiation constants ---
+const DIFF_NOT_FOUND_PUBLICLY = 92;
+const DIFF_DEFAULT = 64;
+
+// --- Summarize service thresholds ---
+const SUMMARIZE_CLEAR_MIN_MATCHED = 4;
+const SUMMARIZE_CLEAR_MIN_DEPTH = 35;
+const SUMMARIZE_MENTIONED_MIN_MENTIONED = 4;
+
+// --- Threat level thresholds ---
+const THREAT_STRATEGIC = 75;
+const THREAT_HIGH = 55;
+const THREAT_MODERATE = 30;
+const THREAT_OVERLAP_WEIGHT = 0.55;
+const THREAT_DEPTH_WEIGHT = 0.45;
+
+// --- Evidence source limits ---
+const EVIDENCE_MAX_SOURCES = 5;
+const EVIDENCE_MIN_SCORE_FILTER = 30;
+const EVIDENCE_EXCERPT_RADIUS = 220;
+const EVIDENCE_EXCERPT_LENGTH = 900;
+const EVIDENCE_INTELLIGENCE_CAP = 20;
+const EVIDENCE_MAX_MATCHED_TERMS = 12;
+
+// --- Score component constants ---
+const COMPETITOR_VISIBILITY_DENOM = 24;
+const STRONGEST_MATCHES_MAX = 5;
+const ADVANTAGES_MAX = 6;
+const LEAD_WITH_MAX = 5;
+const EXEC_READOUT_LEAD_WITH = 4;
+
+// --- Semantic refinement ---
+const SEMANTIC_BONUS_FACTOR = 30;
+
+// --- Executive insight thresholds ---
+const EXEC_HIGH_REVIEW_THRESHOLD = 20;
+
+// --- Finding name slice ---
+const FINDING_SUBSERVICE_SLICE = 8;
 
 function norm(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -13,14 +110,14 @@ function words(text: string) {
 function phraseScore(text: string, term: string) {
   const n = ` ${norm(text)} `;
   const t = ` ${norm(term)} `;
-  if (n.includes(t)) return term.includes(' ') ? 8 : 4;
+  if (n.includes(t)) return term.includes(' ') ? PHRASE_SCORE_EXACT_MULTI : PHRASE_SCORE_EXACT_SINGLE;
   const pieces = words(term);
-  if (!pieces.length) return 0;
+  if (!pieces.length) return PHRASE_SCORE_MISS;
   const hits = pieces.filter((piece) => n.includes(` ${piece} `) || n.includes(piece)).length;
   const ratio = hits / pieces.length;
-  if (ratio >= 0.85) return 3;
-  if (ratio >= 0.65) return 1;
-  return 0;
+  if (ratio >= PHRASE_RATIO_HIGH) return PHRASE_SCORE_HIGH_RATIO;
+  if (ratio >= PHRASE_RATIO_LOW) return PHRASE_SCORE_LOW_RATIO;
+  return PHRASE_SCORE_MISS;
 }
 
 function score(text: string, terms: string[]) {
@@ -28,12 +125,7 @@ function score(text: string, terms: string[]) {
 }
 
 function providerName(input: CompetitorInput) {
-  if (input.name?.trim()) return input.name.trim();
-  try {
-    return new URL(input.url).hostname.replace(/^www\./, '').split('.')[0].replace(/\b\w/g, (l) => l.toUpperCase());
-  } catch {
-    return 'Competitor';
-  }
+  return cleanProviderName(input.name) || nameFromUrl(input.url) || 'Competitor';
 }
 
 const hints: Record<string, string[]> = {
@@ -57,14 +149,86 @@ function evidence(pages: CrawledPage[], terms: string[]) {
   return [...pages].sort((a, b) => score(b.text, terms) - score(a.text, terms))[0];
 }
 
+function pageQuality(page: CrawledPage) {
+  if (page.pageType === 'Service page' || page.pageType === 'Program page') return PAGE_QUALITY_SERVICE_PROGRAM;
+  if (page.pageType === 'Referral page' || page.pageType === 'Eligibility page') return PAGE_QUALITY_REFERRAL_ELIGIBILITY;
+  if (page.pageType === 'Location page') return PAGE_QUALITY_LOCATION;
+  if (page.pageType === 'About page') return PAGE_QUALITY_ABOUT;
+  if (page.pageType === 'News or blog') return PAGE_QUALITY_NEWS_BLOG;
+  if (page.pageType === 'Low value') return PAGE_QUALITY_LOW_VALUE;
+  return PAGE_QUALITY_DEFAULT;
+}
+
+function sourceExcerpt(page: CrawledPage, matchedTerms: string[]) {
+  const text = page.text || page.excerpt || '';
+  const lower = text.toLowerCase();
+  const match = matchedTerms.find((term) => lower.includes(term.toLowerCase()));
+  if (!match) return page.excerpt || text.slice(0, EVIDENCE_EXCERPT_LENGTH);
+  const index = Math.max(0, lower.indexOf(match.toLowerCase()) - EVIDENCE_EXCERPT_RADIUS);
+  return text.slice(index, index + EVIDENCE_EXCERPT_LENGTH).trim() || page.excerpt || text.slice(0, EVIDENCE_EXCERPT_LENGTH);
+}
+
+function evidenceSources(pages: CrawledPage[], terms: string[]): EvidenceSource[] {
+  return [...pages]
+    .map((page) => {
+      const matchedTerms = terms.filter((term) => score(page.text, [term]) > 0).slice(0, EVIDENCE_MAX_MATCHED_TERMS);
+      const termScore = score(page.text, terms);
+      return {
+        url: page.url,
+        title: page.title,
+        pageType: page.pageType,
+        excerpt: sourceExcerpt(page, matchedTerms),
+        matchedTerms,
+        score: termScore + pageQuality(page) + Math.min(EVIDENCE_INTELLIGENCE_CAP, page.intelligenceScore || 0)
+      };
+    })
+    .filter((source) => source.matchedTerms.length || source.score >= EVIDENCE_MIN_SCORE_FILTER)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, EVIDENCE_MAX_SOURCES);
+}
+
+function statusStrength(status: Status) {
+  if (status === 'Clearly offered') return STATUS_STRENGTH_CLEARLY_OFFERED;
+  if (status === 'Mentioned only') return STATUS_STRENGTH_MENTIONED_ONLY;
+  if (status === 'Related but not equivalent') return STATUS_STRENGTH_RELATED;
+  if (status === 'Unclear' || status === 'Needs human review') return STATUS_STRENGTH_UNCLEAR;
+  return STATUS_STRENGTH_NONE;
+}
+
+function confidenceStrength(confidence: Confidence) {
+  if (confidence === 'High') return CONFIDENCE_STRENGTH_HIGH;
+  if (confidence === 'Moderate') return CONFIDENCE_STRENGTH_MODERATE;
+  if (confidence === 'Low') return CONFIDENCE_STRENGTH_LOW;
+  if (confidence === 'Needs review') return CONFIDENCE_STRENGTH_NEEDS_REVIEW;
+  return CONFIDENCE_STRENGTH_NONE;
+}
+
+function buildMatrixScore(params: { status: Status; confidence: Confidence; sources: EvidenceSource[]; matchedCount: number; totalCount: number; aiSourceCount?: number; aiRationale?: string }): MatrixScore {
+  const sourceCount = Math.max(params.sources.length, params.aiSourceCount || 0);
+  const bestSourceQuality = Math.min(100, params.sources.reduce((max, source) => Math.max(max, source.score), 0));
+  const evidenceStrength = Math.round((statusStrength(params.status) * MATRIX_STATUS_WEIGHT) + (confidenceStrength(params.confidence) * MATRIX_CONFIDENCE_WEIGHT) + Math.min(MATRIX_SOURCE_BASE, sourceCount * MATRIX_SOURCE_PER_UNIT));
+  const matchStrength = Math.round((params.matchedCount / Math.max(params.totalCount, 1)) * 100);
+  const reviewRisk = params.status === 'Clearly offered' && params.confidence === 'High' && sourceCount > 0 ? RISK_CLEAR_HIGH_CONF_WITH_SOURCE : params.status === 'Not found publicly' ? RISK_NOT_FOUND_PUBLICLY : params.confidence === 'Low' ? RISK_LOW_CONFIDENCE : RISK_DEFAULT;
+  const andwellDifferentiation = params.status === 'Clearly offered' ? Math.max(0, 100 - matchStrength) : params.status === 'Not found publicly' ? DIFF_NOT_FOUND_PUBLICLY : DIFF_DEFAULT;
+  const overall = Math.round((evidenceStrength * MATRIX_EVIDENCE_WEIGHT) + (bestSourceQuality * MATRIX_SOURCE_QUALITY_WEIGHT) + (matchStrength * MATRIX_MATCH_WEIGHT) + (andwellDifferentiation * MATRIX_DIFFERENTIATION_WEIGHT) + ((100 - reviewRisk) * MATRIX_RISK_WEIGHT));
+  const rationale = [
+    `${params.status} with ${params.confidence.toLowerCase()} confidence`,
+    `${sourceCount} supporting source${sourceCount === 1 ? '' : 's'}`,
+    `${matchStrength}% Andwell subservice match`,
+    `${andwellDifferentiation}% Andwell differentiation signal`,
+    params.aiRationale || ''
+  ].filter(Boolean).slice(0, 5);
+  return { overall: Math.max(0, Math.min(100, overall)), evidenceStrength: Math.min(100, evidenceStrength), sourceQuality: bestSourceQuality, sourceCount, matchStrength, andwellDifferentiation, reviewRisk, rationale };
+}
+
 function classifyTerms(terms: string[], pages: CrawledPage[]): { status: Status; confidence: Confidence; page?: CrawledPage; matched: string[]; rawScore: number } {
   const all = pages.map((p) => p.text).join(' ');
   const rawScore = score(all, terms);
-  const matched = terms.filter((term) => score(all, [term]) > 0).slice(0, 10);
+  const matched = terms.filter((term) => score(all, [term]) > 0).slice(0, CLASSIFY_MAX_MATCHED);
   const page = rawScore > 0 ? evidence(pages, matched.length ? matched : terms) : undefined;
-  if (rawScore >= 12 && matched.length >= 2) return { status: 'Clearly offered', confidence: 'High', page, matched, rawScore };
-  if (rawScore >= 7) return { status: 'Mentioned only', confidence: 'Moderate', page, matched, rawScore };
-  if (rawScore >= 3) return { status: 'Related but not equivalent', confidence: 'Moderate', page, matched, rawScore };
+  if (rawScore >= CLASSIFY_CLEARLY_OFFERED && matched.length >= CLASSIFY_MIN_MATCHED_FOR_CLEAR) return { status: 'Clearly offered', confidence: 'High', page, matched, rawScore };
+  if (rawScore >= CLASSIFY_MENTIONED_ONLY) return { status: 'Mentioned only', confidence: 'Moderate', page, matched, rawScore };
+  if (rawScore >= CLASSIFY_RELATED) return { status: 'Related but not equivalent', confidence: 'Moderate', page, matched, rawScore };
   if (rawScore > 0) return { status: 'Unclear', confidence: 'Low', page, matched, rawScore };
   return { status: 'Not found publicly', confidence: 'Not found', matched: [], rawScore };
 }
@@ -100,6 +264,7 @@ function buildSubserviceFinding(input: CompetitorInput, competitorId: string, se
   const terms = relatedTerms(serviceLine, subservice);
   const c = classifyTerms(terms, pages);
   const subject = `${serviceLine}: ${subservice}`;
+  const sources = evidenceSources(pages, terms);
   return {
     id: `${competitorId}:${serviceLine}:${subservice}`,
     competitorId,
@@ -111,7 +276,9 @@ function buildSubserviceFinding(input: CompetitorInput, competitorId: string, se
     confidence: c.confidence,
     sourceUrl: c.page?.url,
     sourceTitle: c.page?.title,
-    evidenceExcerpt: c.page?.excerpt || `No explicit public evidence for ${subservice} was found in ${pages.length} reviewed pages.`,
+    evidenceExcerpt: sources[0]?.excerpt || c.page?.excerpt || `No explicit public evidence for ${subservice} was found in ${pages.length} reviewed pages.`,
+    evidenceSources: sources,
+    matrixScore: buildMatrixScore({ status: c.status, confidence: c.confidence, sources, matchedCount: c.status === 'Clearly offered' ? 1 : 0, totalCount: 1 }),
     matchedTerms: c.matched,
     aiInterpretation: interpretation(name, c.status, subject),
     safeSalesWording: c.status === 'Not found publicly'
@@ -127,8 +294,8 @@ function summarizeServiceStatus(subs: SubserviceFinding[]): { status: Status; co
   const mentioned = subs.filter((s) => s.competitorStatus === 'Mentioned only' || s.competitorStatus === 'Related but not equivalent').length;
   const total = Math.max(subs.length, 1);
   const depth = Math.round((matched / total) * 100);
-  if (matched >= 4 || depth >= 35) return { status: 'Clearly offered', confidence: 'High', matched, depth };
-  if (matched >= 1 || mentioned >= 4) return { status: 'Mentioned only', confidence: 'Moderate', matched, depth };
+  if (matched >= SUMMARIZE_CLEAR_MIN_MATCHED || depth >= SUMMARIZE_CLEAR_MIN_DEPTH) return { status: 'Clearly offered', confidence: 'High', matched, depth };
+  if (matched >= 1 || mentioned >= SUMMARIZE_MENTIONED_MIN_MENTIONED) return { status: 'Mentioned only', confidence: 'Moderate', matched, depth };
   if (mentioned >= 2) return { status: 'Related but not equivalent', confidence: 'Moderate', matched, depth };
   if (mentioned === 1) return { status: 'Unclear', confidence: 'Low', matched, depth };
   return { status: 'Not found publicly', confidence: 'Not found', matched, depth };
@@ -144,6 +311,7 @@ function buildFinding(input: CompetitorInput, competitorId: string, service: typ
   const confidence = status === 'Clearly offered' ? (c.confidence === 'High' || summary.confidence === 'High' ? 'High' : 'Moderate') : summary.confidence;
   const bestPage = c.page || evidence(pages, serviceHints);
   const clearlyMatchedSubservices = summary.matched;
+  const sources = evidenceSources(pages, [...serviceHints, service.serviceLine, ...service.subservices]);
   return {
     id: `${competitorId}:${service.serviceLine}`,
     competitorId,
@@ -154,12 +322,14 @@ function buildFinding(input: CompetitorInput, competitorId: string, service: typ
     confidence,
     sourceUrl: bestPage?.url,
     sourceTitle: bestPage?.title,
-    evidenceExcerpt: bestPage?.excerpt || `No explicit public evidence was found in ${pages.length} reviewed pages.`,
+    evidenceExcerpt: sources[0]?.excerpt || bestPage?.excerpt || `No explicit public evidence was found in ${pages.length} reviewed pages.`,
+    evidenceSources: sources,
+    matrixScore: buildMatrixScore({ status, confidence, sources, matchedCount: clearlyMatchedSubservices, totalCount: service.subservices.length }),
     aiInterpretation: `${interpretation(name, status, service.serviceLine)} ${clearlyMatchedSubservices} of ${service.subservices.length} Andwell subservices were clearly matched from public pages.`,
     matchLevel: status === 'Clearly offered' ? 'Main service line match. Subservice depth determines positioning strength.' : status === 'Not found publicly' ? 'Potential Andwell advantage based on reviewed public pages.' : 'Partial, related, or unclear public match. Review before using in sales materials.',
     andwellAdvantage: status === 'Clearly offered'
       ? `${service.serviceLine} appears to be a shared public service area. Andwell differentiation should come from subservice depth and evidence, especially capabilities not clearly found for ${name}.`
-      : `Andwell publicly promotes ${service.serviceLine} with detailed capabilities including ${service.subservices.slice(0, 8).join(', ')}.`,
+      : `Andwell publicly promotes ${service.serviceLine} with detailed capabilities including ${service.subservices.slice(0, FINDING_SUBSERVICE_SLICE).join(', ')}.`,
     competitorAdvantage: status === 'Clearly offered'
       ? `${name} publicly promotes ${service.serviceLine}. Review proof points, response time language, referral simplicity, and geography for possible competitor advantage.`
       : 'No clear competitor advantage was identified from reviewed public pages for this service line.',
@@ -176,14 +346,14 @@ function buildFinding(input: CompetitorInput, competitorId: string, service: typ
 }
 
 function threatLevel(overlap: number, depth: number): ThreatLevel {
-  const blended = Math.round((overlap * 0.55) + (depth * 0.45));
-  if (blended >= 75) return 'Strategic threat';
-  if (blended >= 55) return 'High overlap';
-  if (blended >= 30) return 'Moderate overlap';
+  const blended = Math.round((overlap * THREAT_OVERLAP_WEIGHT) + (depth * THREAT_DEPTH_WEIGHT));
+  if (blended >= THREAT_STRATEGIC) return 'Strategic threat';
+  if (blended >= THREAT_HIGH) return 'High overlap';
+  if (blended >= THREAT_MODERATE) return 'Moderate overlap';
   return 'Low overlap';
 }
 
-function buildScore(analysis: Omit<CompetitorAnalysis, 'score'>): CompetitorScore {
+export function buildScore(analysis: Omit<CompetitorAnalysis, 'score'>): CompetitorScore {
   const total = Math.max(analysis.findings.length, 1);
   const matched = analysis.findings.filter((f) => f.competitorStatus === 'Clearly offered');
   const notMatched = analysis.findings.filter((f) => f.competitorStatus !== 'Clearly offered');
@@ -191,13 +361,13 @@ function buildScore(analysis: Omit<CompetitorAnalysis, 'score'>): CompetitorScor
   const serviceLineMatchScore = Math.round((matched.length / total) * 100);
   const subserviceDepthScore = Math.round(analysis.findings.reduce((sum, f) => sum + f.subserviceDepthScore, 0) / total);
   const andwellDifferentiationScore = Math.round((notMatched.length / total) * 100);
-  const competitorVisibilityScore = Math.min(100, Math.round((analysis.pagesReviewed.length / 24) * 100));
+  const competitorVisibilityScore = Math.min(100, Math.round((analysis.pagesReviewed.length / COMPETITOR_VISIBILITY_DENOM) * 100));
   const evidenceStrengthScore = Math.round((analysis.findings.filter((f) => f.confidence === 'High').length / total) * 100);
   const reviewRiskScore = Math.round((reviewItems.length / total) * 100);
-  const strongestMatches = matched.sort((a, b) => b.subserviceDepthScore - a.subserviceDepthScore).slice(0, 5).map((f) => f.serviceLine);
-  const strongestAndwellAdvantages = notMatched.slice(0, 6).map((f) => f.serviceLine);
-  const needsReview = reviewItems.slice(0, 6).map((f) => f.serviceLine);
-  const leadWith = [...new Set(['Continuum depth', ...strongestAndwellAdvantages.slice(0, 5)])];
+  const strongestMatches = matched.sort((a, b) => b.subserviceDepthScore - a.subserviceDepthScore).slice(0, STRONGEST_MATCHES_MAX).map((f) => f.serviceLine);
+  const strongestAndwellAdvantages = notMatched.slice(0, ADVANTAGES_MAX).map((f) => f.serviceLine);
+  const needsReview = reviewItems.slice(0, ADVANTAGES_MAX).map((f) => f.serviceLine);
+  const leadWith = [...new Set(['Continuum depth', ...strongestAndwellAdvantages.slice(0, LEAD_WITH_MAX)])];
   const level = threatLevel(serviceLineMatchScore, subserviceDepthScore);
   return {
     competitorId: analysis.id,
@@ -213,7 +383,7 @@ function buildScore(analysis: Omit<CompetitorAnalysis, 'score'>): CompetitorScor
     strongestAndwellAdvantages,
     needsReview,
     leadWith,
-    executiveReadout: `${analysis.name} shows ${serviceLineMatchScore}% service line overlap and ${subserviceDepthScore}% subservice depth against the Andwell taxonomy. Threat level: ${level}. Lead with ${leadWith.slice(0, 4).join(', ')} and verify review items before sales use.`
+    executiveReadout: `${analysis.name} shows ${serviceLineMatchScore}% service line overlap and ${subserviceDepthScore}% subservice depth against the Andwell taxonomy. Threat level: ${level}. Lead with ${leadWith.slice(0, EXEC_READOUT_LEAD_WITH).join(', ')} and verify review items before sales use.`
   };
 }
 
@@ -253,7 +423,7 @@ function executiveInsights(scores: CompetitorScore[], humanReviewItems: number):
   });
   insights.push({
     title: 'Review before sales use',
-    priority: humanReviewItems > 20 ? 'High' : 'Medium',
+    priority: humanReviewItems > EXEC_HIGH_REVIEW_THRESHOLD ? 'High' : 'Medium',
     audience: 'Admin',
     summary: `${humanReviewItems} findings need human review or manager review before they should be treated as approved sales language.`,
     action: 'Use the Review Center to approve, edit, or reject findings before publishing battlecards to the field.'
@@ -266,6 +436,26 @@ function executiveInsights(scores: CompetitorScore[], humanReviewItems: number):
     action: 'Coach reps to lead with specific capabilities, patient situations, and referral source problems rather than saying only hospice, home health, or behavioral health.'
   });
   return insights;
+}
+
+export async function semanticRefineFindings(findings: Finding[]): Promise<Finding[]> {
+  if (!useSemanticMatching) return findings;
+  try {
+    const enriched = await Promise.all(findings.map(async (finding) => {
+      const text = `${finding.serviceLine} ${finding.competitorStatus} ${finding.evidenceExcerpt} ${finding.andwellAdvantage}`;
+      const query = `${finding.serviceLine} ${finding.andwellStatus}`;
+      const sim = await semanticScore(text, query);
+      const semanticBonus = Math.round(sim * SEMANTIC_BONUS_FACTOR);
+      if (finding.matrixScore) {
+        const boosted = Math.min(100, finding.matrixScore.overall + semanticBonus);
+        finding.matrixScore = { ...finding.matrixScore, overall: boosted, rationale: [...finding.matrixScore.rationale, `semantic boost: +${semanticBonus}`] };
+      }
+      return finding;
+    }));
+    return enriched;
+  } catch {
+    return findings;
+  }
 }
 
 export function buildReport(analyses: CompetitorAnalysis[], crawlErrors: { url: string; error: string }[]): IntelligenceReport {

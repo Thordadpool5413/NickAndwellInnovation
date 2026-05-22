@@ -15,3 +15,8 @@ pnpm-debug.log*
 .DS_Store
 .vercel
 *.tsbuildinfo
+
+# Build artifacts
+tsconfig.tsbuildinfo
+# Config files already tracked
+

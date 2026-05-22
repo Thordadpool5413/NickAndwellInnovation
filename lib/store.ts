@@ -134,6 +134,7 @@ async function jsonWriteStore(store: HubStore) {
 }
 
 function logPersistenceFallback(provider: string, error: unknown) {
+  // eslint-disable-next-line no-console
   console.error(`${provider} persistence failed. Falling back to local JSON storage.`, error);
 }
 

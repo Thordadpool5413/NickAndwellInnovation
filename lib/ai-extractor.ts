@@ -1,29 +1,15 @@
-import https from 'node:https';
 import { andwellCatalog } from './andwell';
 import { selectBestPromptPages } from './smart-ranking';
+import { cleanProviderName, nameFromUrl, providerNameFromPages } from './provider-identity';
+import { getProvider } from './llm-provider';
 import type { AICompetitorExtraction, CompetitorInput, CrawledPage } from './types';
 
-const defaultModel = process.env.OPENAI_MODEL || 'gpt-4.1-nano';
-const openAIBaseUrl = (process.env.OPENAI_BASE_URL || 'https://api.openai.com').replace(/\/$/, '');
-const openAITimeoutMs = Number(process.env.OPENAI_TIMEOUT_MS || 60000);
 const maxPagesForPrompt = Math.max(3, Math.min(10, Number(process.env.OPENAI_MAX_PROMPT_PAGES || 4)));
 const maxCharsPerPage = Math.max(900, Math.min(2400, Number(process.env.OPENAI_MAX_CHARS_PER_PAGE || 1000)));
 const maxOutputTokens = Math.max(1800, Math.min(5000, Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || 1800)));
 
-type OpenAIRequestBody = {
-  model: string;
-  input: string;
-  temperature: number;
-  max_output_tokens: number;
-};
-
-function providerName(input: CompetitorInput) {
-  if (input.name?.trim()) return input.name.trim();
-  try {
-    return new URL(input.url).hostname.replace(/^www\./, '').split('.')[0].replace(/\b\w/g, (letter) => letter.toUpperCase());
-  } catch {
-    return 'Competitor';
-  }
+function providerName(input: CompetitorInput, pages?: CrawledPage[]) {
+  return cleanProviderName(input.name) || (pages ? providerNameFromPages(pages) : '') || nameFromUrl(input.url) || 'Competitor';
 }
 
 function safeText(value: unknown, fallback = '') {
@@ -62,16 +48,23 @@ function reviewRisk(value: unknown) {
   return allowed.includes(text) ? text as AICompetitorExtraction['serviceLineDepth'][number]['reviewRisk'] : 'High';
 }
 
+function pageType(value: unknown): AICompetitorExtraction['pageEvidence'][number]['pageType'] {
+  const allowed = ['Service page', 'Program page', 'Referral page', 'Eligibility page', 'Location page', 'About page', 'News or blog', 'Low value', 'General page'];
+  const text = String(value || '').trim();
+  return allowed.includes(text) ? text as AICompetitorExtraction['pageEvidence'][number]['pageType'] : 'General page';
+}
+
 function clampScore(value: unknown) {
   const number = Number(value);
   if (!Number.isFinite(number)) return 0;
   return Math.max(0, Math.min(100, Math.round(number)));
 }
 
-function normalizeExtraction(raw: any, input: CompetitorInput): AICompetitorExtraction {
+export function normalizeExtraction(raw: any, input: CompetitorInput, pages: CrawledPage[]): AICompetitorExtraction {
+  const suppliedName = cleanProviderName(input.name);
   return {
-    providerName: safeText(raw?.providerName, providerName(input)),
-    aiModel: safeText(raw?.aiModel, defaultModel),
+    providerName: suppliedName || cleanProviderName(raw?.providerName) || providerName(input, pages),
+    aiModel: safeText(raw?.aiModel, 'ai-extractor'),
     generatedAt: new Date().toISOString(),
     servicesMentioned: arrayOfStrings(raw?.servicesMentioned),
     benefitsMentioned: arrayOfStrings(raw?.benefitsMentioned),
@@ -83,6 +76,9 @@ function normalizeExtraction(raw: any, input: CompetitorInput): AICompetitorExtr
       serviceLine: safeText(item?.serviceLine, 'Needs review'),
       depthScore: clampScore(item?.depthScore),
       evidenceStrength: evidenceStrength(item?.evidenceStrength),
+      status: status(item?.status),
+      sourceCount: clampScore(item?.sourceCount),
+      matchRationale: safeText(item?.matchRationale, 'No match rationale returned.'),
       summary: safeText(item?.summary, 'Needs review.'),
       competitorAdvantages: arrayOfStrings(item?.competitorAdvantages),
       andwellAdvantages: arrayOfStrings(item?.andwellAdvantages),
@@ -95,6 +91,9 @@ function normalizeExtraction(raw: any, input: CompetitorInput): AICompetitorExtr
       subservice: safeText(item?.subservice, 'Needs review'),
       status: status(item?.status),
       confidence: confidence(item?.confidence),
+      evidenceStrength: evidenceStrength(item?.evidenceStrength),
+      sourceCount: clampScore(item?.sourceCount),
+      matchRationale: safeText(item?.matchRationale, 'No match rationale returned.'),
       evidenceExcerpt: safeText(item?.evidenceExcerpt, 'No evidence excerpt returned by AI.'),
       sourceUrl: optionalText(item?.sourceUrl),
       safeSalesLanguage: safeText(item?.safeSalesLanguage, 'Use evidence based language and verify before sales use.'),
@@ -115,6 +114,15 @@ function normalizeExtraction(raw: any, input: CompetitorInput): AICompetitorExtr
       safeSalesLanguage: safeText(item?.safeSalesLanguage, 'Use evidence based language.'),
       doNotSayLanguage: safeText(item?.doNotSayLanguage, 'Do not say the competitor does not offer a service unless confirmed by approved evidence.')
     })) : [],
+    pageEvidence: Array.isArray(raw?.pageEvidence) ? raw.pageEvidence.slice(0, 60).map((item: any) => ({
+      url: safeText(item?.url, ''),
+      title: safeText(item?.title, 'Untitled page'),
+      pageType: pageType(item?.pageType),
+      servicesFound: arrayOfStrings(item?.servicesFound),
+      proofPoints: arrayOfStrings(item?.proofPoints),
+      referralSignals: arrayOfStrings(item?.referralSignals),
+      limitations: arrayOfStrings(item?.limitations)
+    })).filter((item: any) => item.url) : [],
     rawConfidence: ['High', 'Medium', 'Low'].includes(String(raw?.rawConfidence)) ? raw.rawConfidence : 'Low'
   };
 }
@@ -135,6 +143,8 @@ function promptFor(input: CompetitorInput, pages: CrawledPage[]) {
 
 Analyze the competitor's public website evidence and return ONLY valid compact JSON. Do not include markdown. Do not make unsupported claims. Keep every string concise.
 
+Your job is not generic scraping. You are building an Evidence Matrix for Andwell Health Partners. Scrub the provided pages page by page, classify what each page proves, then compare that evidence to the Andwell taxonomy.
+
 Safety and compliance rules:
 1. Use only the provided public website evidence.
 2. Never say a competitor does not offer a service only because it was not found. Use "Not found publicly".
@@ -142,12 +152,28 @@ Safety and compliance rules:
 4. Create sales language that is safe, evidence based, and manager review friendly.
 5. Compare at both service line and subservice level.
 6. Prioritize pages with higher intelligenceScore when evidence conflicts.
+7. Treat a dedicated service/program/referral/eligibility page as stronger evidence than a navigation label, blog mention, footer, generic marketing copy, or unrelated page.
+8. Score equivalence based on care setting, patient population, eligibility, referral pathway, clinical depth, geography, proof points, and explicit public wording.
+9. Andwell differentiation means Andwell publicly shows a capability more clearly or more deeply than the reviewed competitor pages. It does not mean the competitor definitely lacks it.
+10. If evidence is vague, keep status as Mentioned only, Related but not equivalent, Unclear, or Needs human review.
+
+Required analysis sequence:
+1. Page evidence inventory: for each reviewed page, identify pageType, servicesFound, proofPoints, referralSignals, and limitations.
+2. Service comparison: compare every Andwell serviceLine to competitor evidence and return status, depthScore, evidenceStrength, sourceCount, matchRationale, summary, advantages, proof points, CTAs, and reviewRisk.
+3. Subservice comparison: compare every Andwell subservice to competitor evidence and return status, confidence, evidenceStrength, sourceCount, evidenceExcerpt, sourceUrl, matchRationale, safeSalesLanguage, and doNotSayLanguage.
+4. Executive/sales synthesis: only after the evidence inventory and comparison are complete.
 
 Required JSON keys:
-providerName, servicesMentioned, benefitsMentioned, claimsMade, programsOffered, proofPoints, referralCallsToAction, serviceLineDepth, subserviceDepth, competitorAdvantages, andwellAdvantages, safeSalesLanguage, doNotSayLanguage, reviewRisks, leadershipSummary, salesBattlecards, rawConfidence.
+providerName, servicesMentioned, benefitsMentioned, claimsMade, programsOffered, proofPoints, referralCallsToAction, serviceLineDepth, subserviceDepth, competitorAdvantages, andwellAdvantages, safeSalesLanguage, doNotSayLanguage, reviewRisks, leadershipSummary, salesBattlecards, pageEvidence, rawConfidence.
 
 Competitor input:
-${JSON.stringify({ name: providerName(input), url: input.url, market: input.market || 'Not provided', notes: input.notes || '' })}
+${JSON.stringify({ name: providerName(input, pages), userSuppliedName: cleanProviderName(input.name) || null, url: input.url, market: input.market || 'Not provided', notes: input.notes || '' })}
+
+Provider identity rules:
+1. If userSuppliedName is present, preserve it as providerName unless public website evidence clearly identifies the same organization with a cleaner formal name.
+2. Do not use page titles, page slugs, cities, service names, career pages, or generic words such as Locations, Careers, Bangor, Augusta, Services, or Home as providerName.
+3. If the URL points to a location, career page, or service page, identify the parent provider organization from site metadata and page evidence.
+4. If identity is unclear, keep the supplied provider name or hostname-derived organization name and flag uncertainty in reviewRisks.
 
 Andwell service catalog:
 ${JSON.stringify(catalog)}
@@ -169,6 +195,9 @@ Return JSON in this exact shape:
       "serviceLine": "string",
       "depthScore": 0,
       "evidenceStrength": "Strong | Moderate | Weak | Not found",
+      "status": "Clearly offered | Mentioned only | Related but not equivalent | Not found publicly | Unclear | Needs human review",
+      "sourceCount": 0,
+      "matchRationale": "string",
       "summary": "string",
       "competitorAdvantages": ["string"],
       "andwellAdvantages": ["string"],
@@ -183,6 +212,9 @@ Return JSON in this exact shape:
       "subservice": "string",
       "status": "Clearly offered | Mentioned only | Related but not equivalent | Not found publicly | Unclear | Needs human review",
       "confidence": "High | Moderate | Low | Not found | Needs review",
+      "evidenceStrength": "Strong | Moderate | Weak | Not found",
+      "sourceCount": 0,
+      "matchRationale": "string",
       "evidenceExcerpt": "string",
       "sourceUrl": "string",
       "safeSalesLanguage": "string",
@@ -206,6 +238,17 @@ Return JSON in this exact shape:
       "doNotSayLanguage": "string"
     }
   ],
+  "pageEvidence": [
+    {
+      "url": "string",
+      "title": "string",
+      "pageType": "Service page | Program page | Referral page | Eligibility page | Location page | About page | News or blog | Low value | General page",
+      "servicesFound": ["string"],
+      "proofPoints": ["string"],
+      "referralSignals": ["string"],
+      "limitations": ["string"]
+    }
+  ],
   "rawConfidence": "High | Medium | Low"
 }`;
 }
@@ -216,133 +259,37 @@ function extractJson(text: string) {
   const start = trimmed.indexOf('{');
   const end = trimmed.lastIndexOf('}');
   if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1));
-  throw new Error('OpenAI did not return parseable JSON.');
-}
-
-function compactError(error: unknown) {
-  if (error instanceof Error) return error.message;
-  return String(error || 'Unknown error');
-}
-
-function isTlsTransportError(error: unknown) {
-  const message = compactError(error).toLowerCase();
-  return message.includes('ssl') || message.includes('tls') || message.includes('ssl3_read_bytes') || message.includes('alert internal error') || message.includes('econnreset') || message.includes('socket hang up');
-}
-
-async function callOpenAIWithFetch(apiKey: string, requestBody: OpenAIRequestBody) {
-  const response = await fetch(`${openAIBaseUrl}/v1/responses`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${apiKey}`,
-      'content-type': 'application/json'
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`OpenAI HTTP error through fetch: ${response.status} ${errorText.slice(0, 500)}`);
-  }
-
-  return response.json();
-}
-
-function callOpenAIWithNativeHttps(apiKey: string, requestBody: OpenAIRequestBody): Promise<any> {
-  const endpoint = new URL(`${openAIBaseUrl}/v1/responses`);
-  const body = JSON.stringify(requestBody);
-
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      protocol: endpoint.protocol,
-      hostname: endpoint.hostname,
-      port: endpoint.port || 443,
-      path: `${endpoint.pathname}${endpoint.search}`,
-      method: 'POST',
-      servername: endpoint.hostname,
-      minVersion: 'TLSv1.2',
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        'content-type': 'application/json',
-        'content-length': Buffer.byteLength(body),
-        accept: 'application/json'
-      },
-      timeout: openAITimeoutMs
-    }, (res) => {
-      const chunks: Buffer[] = [];
-      res.on('data', (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-      res.on('end', () => {
-        const text = Buffer.concat(chunks).toString('utf8');
-        const statusCode = res.statusCode || 0;
-        if (statusCode < 200 || statusCode >= 300) {
-          reject(new Error(`OpenAI HTTP error through native HTTPS: ${statusCode} ${text.slice(0, 500)}`));
-          return;
-        }
-        try {
-          resolve(JSON.parse(text));
-        } catch {
-          reject(new Error(`OpenAI native HTTPS returned non JSON response: ${text.slice(0, 500)}`));
-        }
-      });
-    });
-
-    req.on('timeout', () => {
-      req.destroy(new Error(`OpenAI request timed out after ${openAITimeoutMs}ms.`));
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-async function callOpenAI(apiKey: string, requestBody: OpenAIRequestBody) {
-  try {
-    return await callOpenAIWithFetch(apiKey, requestBody);
-  } catch (fetchError) {
-    if (!isTlsTransportError(fetchError)) throw fetchError;
-    try {
-      return await callOpenAIWithNativeHttps(apiKey, requestBody);
-    } catch (nativeError) {
-      throw new Error(`OpenAI TLS connection failed through fetch and native HTTPS fallback. Fetch error: ${compactError(fetchError)}. Native HTTPS error: ${compactError(nativeError)}. This usually means the hosting environment cannot complete an outbound TLS handshake to api.openai.com, or a proxy/firewall is interrupting TLS.`);
-    }
-  }
-}
-
-function outputTextFromPayload(payload: any) {
-  return payload.output_text || payload.output?.flatMap((item: any) => item.content || []).map((content: any) => content.text || '').join('\n') || '';
+  throw new Error('LLM did not return parseable JSON.');
 }
 
 export function isAIExtractionConfigured() {
+  const variant = (process.env.LLM_PROVIDER || 'openai').toLowerCase();
+  if (variant === 'ollama') return true;
+  if (variant === 'anthropic') return Boolean(process.env.ANTHROPIC_API_KEY);
   return Boolean(process.env.OPENAI_API_KEY);
 }
 
 export function getAITransportDiagnostics() {
+  const provider = getProvider();
   return {
+    provider: provider.name,
     configured: isAIExtractionConfigured(),
-    model: defaultModel,
-    baseUrlHost: (() => {
-      try { return new URL(openAIBaseUrl).hostname; } catch { return 'invalid'; }
-    })(),
-    timeoutMs: openAITimeoutMs,
     maxPagesForPrompt,
     maxCharsPerPage,
     maxOutputTokens,
     promptPageSelection: 'smart relevance ranking',
-    transport: 'fetch with native Node HTTPS TLS fallback'
   };
 }
 
 export async function extractCompetitorIntelligence(input: CompetitorInput, pages: CrawledPage[]): Promise<AICompetitorExtraction | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+  const provider = getProvider();
+  if (!isAIExtractionConfigured()) return null;
 
-  const payload = await callOpenAI(apiKey, {
-    model: defaultModel,
-    input: promptFor(input, pages),
+  const outputText = await provider.call(promptFor(input, pages), {
+    maxTokens: maxOutputTokens,
     temperature: 0.2,
-    max_output_tokens: maxOutputTokens
   });
 
-  const outputText = outputTextFromPayload(payload);
   const parsed = extractJson(outputText);
-  return normalizeExtraction({ ...parsed, aiModel: defaultModel }, input);
+  return normalizeExtraction({ ...parsed, aiModel: provider.name }, input, pages);
 }
