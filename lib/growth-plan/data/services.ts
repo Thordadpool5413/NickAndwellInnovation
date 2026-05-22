@@ -1,4 +1,4 @@
-export interface ServiceData {
+export interface ServiceInfo {
   id: string;
   name: string;
   category: string;
@@ -7,4 +7,5 @@ export interface ServiceData {
   countiesServed: number;
 }
 
-export const services: ServiceData[] = [];
+export const services: ServiceInfo[] = [];
+export default services;
