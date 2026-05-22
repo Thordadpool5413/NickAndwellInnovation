@@ -1,48 +1,68 @@
 "use client"
 
-import { BookOpen, Search } from "lucide-react"
+import { BookOpen } from "lucide-react"
 import { useState } from "react"
 import { mockCatalogItems } from "@/lib/data"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { EmptyState } from "@/components/ui/empty-state"
 
 export default function CatalogPage() {
   const [search, setSearch] = useState("")
-  const filtered = mockCatalogItems.filter((i) =>
-    i.name.toLowerCase().includes(search.toLowerCase()) ||
-    i.description.toLowerCase().includes(search.toLowerCase())
+  const filtered = mockCatalogItems.filter(
+    (i) =>
+      i.name.toLowerCase().includes(search.toLowerCase()) ||
+      i.description.toLowerCase().includes(search.toLowerCase()),
   )
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-bold text-white">Andwell Catalog</h2>
-        <p className="text-zinc-500 text-sm mt-1">Service catalog with evidence-backed capability descriptions</p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Andwell Catalog</h1>
+        <p className="text-surface-500 text-sm mt-1.5">
+          Service catalog with evidence-backed capability descriptions
+        </p>
       </div>
-      <div className="relative">
-        <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search catalog..."
-          className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-4">
+
+      <Input
+        search
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search catalog..."
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map((item) => (
-          <div key={item.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+          <Card key={item.id} hover>
             <div className="flex items-start gap-3">
-              <BookOpen className="w-5 h-5 text-blue-400 mt-0.5" />
-              <div>
+              <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center shrink-0">
+                <BookOpen className="w-5 h-5 text-brand-400" />
+              </div>
+              <div className="min-w-0">
                 <h3 className="font-semibold text-white">{item.name}</h3>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-500 inline-block mt-1">{item.category}</span>
-                <p className="text-sm text-zinc-400 mt-2">{item.description}</p>
+                <Badge className="mt-1.5">{item.category}</Badge>
+                <p className="text-sm text-surface-400 mt-2 leading-relaxed">{item.description}</p>
                 <div className="mt-3">
-                  <span className="text-xs text-zinc-600">{item.evidence.length} evidence items</span>
+                  <span className="text-xs text-surface-600">
+                    {item.evidence.length} evidence item{item.evidence.length !== 1 ? "s" : ""}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
+
+      {filtered.length === 0 && (
+        <EmptyState
+          icon={<BookOpen className="w-7 h-7" />}
+          title="No catalog items found"
+          description="Try adjusting your search query."
+        />
+      )}
+
+      <p className="text-xs text-surface-600">{filtered.length} of {mockCatalogItems.length} catalog items</p>
     </div>
   )
 }

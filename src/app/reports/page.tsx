@@ -4,11 +4,16 @@ import { useState } from "react"
 import { FileText, Download, Eye, Plus, X } from "lucide-react"
 import { mockReports } from "@/lib/data"
 import type { Report } from "@/lib/types"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Select } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
 
-const typeColors: Record<string, string> = {
-  competitive: "bg-blue-900 text-blue-300",
-  growth: "bg-green-900 text-green-300",
-  board: "bg-purple-900 text-purple-300",
+const typeStyles: Record<string, "brand" | "green" | "purple"> = {
+  competitive: "brand",
+  growth: "green",
+  board: "purple",
 }
 
 export default function ReportsPage() {
@@ -24,7 +29,8 @@ export default function ReportsPage() {
       title: newTitle,
       type: newType,
       createdAt: new Date().toISOString().split("T")[0],
-      summary: "AI-generated report based on current intelligence data. Review generated content for accuracy before distribution.",
+      summary:
+        "AI-generated report based on current intelligence data. Review generated content for accuracy before distribution.",
     }
     setReports([report, ...reports])
     setNewTitle("")
@@ -32,71 +38,65 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white">Reports</h2>
-          <p className="text-zinc-500 text-sm mt-1">Saved competitive, growth, and board-ready reports for Maine market</p>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Reports</h1>
+          <p className="text-surface-500 text-sm mt-1.5">
+            Competitive, growth, and board-ready reports for Maine market
+          </p>
         </div>
-        <button onClick={() => setShowNew(!showNew)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          <Plus className="w-4 h-4" /> Generate Report
-        </button>
+        <Button onClick={() => setShowNew(!showNew)} icon={showNew ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}>
+          {showNew ? "Cancel" : "Generate Report"}
+        </Button>
       </div>
 
       {showNew && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-white">New Report</h3>
-            <button onClick={() => setShowNew(false)} className="text-zinc-500 hover:text-white"><X className="w-4 h-4" /></button>
-          </div>
+        <Card>
+          <h3 className="font-semibold text-white mb-4">New Report</h3>
           <div className="space-y-3">
-            <input
+            <Input
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Report title"
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
             />
-            <select
+            <Select
               value={newType}
               onChange={(e) => setNewType(e.target.value as Report["type"])}
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="competitive">Competitive Analysis</option>
-              <option value="growth">Growth Opportunity</option>
-              <option value="board">Board Presentation</option>
-            </select>
-            <button onClick={generateReport} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-              Generate
-            </button>
+              options={[
+                { value: "competitive", label: "Competitive Analysis" },
+                { value: "growth", label: "Growth Opportunity" },
+                { value: "board", label: "Board Presentation" },
+              ]}
+            />
+            <Button onClick={generateReport}>Generate</Button>
           </div>
-        </div>
+        </Card>
       )}
 
       <div className="space-y-3">
         {reports.map((r) => (
-          <div key={r.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex items-start justify-between">
-            <div className="flex items-start gap-4">
-              <FileText className="w-8 h-8 text-zinc-600 mt-1" />
-              <div>
-                <h3 className="font-semibold text-white">{r.title}</h3>
-                <p className="text-sm text-zinc-400 mt-1">{r.summary}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${typeColors[r.type] || "bg-zinc-800 text-zinc-400"}`}>
-                    {r.type}
-                  </span>
-                  <span className="text-xs text-zinc-600">{r.createdAt}</span>
+          <Card key={r.id} hover>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-surface-800 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-surface-400" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-white">{r.title}</h3>
+                  <p className="text-sm text-surface-400 mt-1 line-clamp-2">{r.summary}</p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Badge variant={typeStyles[r.type] || "default"}>{r.type}</Badge>
+                    <span className="text-xs text-surface-600">{r.createdAt}</span>
+                  </div>
                 </div>
               </div>
+              <div className="flex gap-2 shrink-0 ml-4">
+                <Button variant="ghost" size="sm" icon={<Eye className="w-4 h-4" />} title="View" />
+                <Button variant="ghost" size="sm" icon={<Download className="w-4 h-4" />} title="Download" />
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors" title="View">
-                <Eye className="w-4 h-4" />
-              </button>
-              <button className="p-2 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white transition-colors" title="Download">
-                <Download className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

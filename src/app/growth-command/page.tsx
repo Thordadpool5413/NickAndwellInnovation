@@ -1,99 +1,110 @@
 "use client"
 
-import { DollarSign, Users, Calendar, MapPin } from "lucide-react"
+import { DollarSign, Users, Calendar, MapPin, TrendingUp } from "lucide-react"
 import { mockScenarios, maineCounties } from "@/lib/data"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableHead, TableHeaderCell, TableBody, TableRow, TableCell } from "@/components/ui/table"
 
 export default function GrowthCommandPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-bold text-white">Growth Command</h2>
-        <p className="text-zinc-500 text-sm mt-1">Maine county demand modeling, service-line opportunity, and launch sequencing</p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Growth Command</h1>
+        <p className="text-surface-500 text-sm mt-1.5">
+          Maine county demand modeling, service-line opportunity, and launch sequencing
+        </p>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <h3 className="font-semibold text-white mb-4">Maine County Profile</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-zinc-500 border-b border-zinc-800">
-              <th className="pb-3 font-medium">County</th>
-              <th className="pb-3 font-medium">Population</th>
-              <th className="pb-3 font-medium">% 65+</th>
-              <th className="pb-3 font-medium">% Rural</th>
-              <th className="pb-3 font-medium">Home Health Demand</th>
-              <th className="pb-3 font-medium">Agencies</th>
-              <th className="pb-3 font-medium">Priority</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Card>
+        <div className="flex items-center gap-2 mb-4">
+          <TrendingUp className="w-4 h-4 text-brand-400" />
+          <h3 className="font-semibold text-white text-sm">Maine County Profile</h3>
+        </div>
+        <Table>
+          <TableHead>
+            <TableHeaderCell>County</TableHeaderCell>
+            <TableHeaderCell>Population</TableHeaderCell>
+            <TableHeaderCell>% 65+</TableHeaderCell>
+            <TableHeaderCell>% Rural</TableHeaderCell>
+            <TableHeaderCell>Rural Bar</TableHeaderCell>
+            <TableHeaderCell>Priority</TableHeaderCell>
+          </TableHead>
+          <TableBody>
             {maineCounties.map((c) => (
-              <tr key={c.name} className="border-b border-zinc-800 last:border-0 text-zinc-300">
-                <td className="py-3 font-medium">{c.name}</td>
-                <td className="py-3">{c.population.toLocaleString()}</td>
-                <td className="py-3">{c.over65Percent}%</td>
-                <td className="py-3">{c.ruralPercent}%</td>
-                <td className="py-3">{c.homeHealthAgencies} agencies</td>
-                <td className="py-3">
+              <TableRow key={c.name}>
+                <TableCell className="font-medium text-white">{c.name}</TableCell>
+                <TableCell>{c.population.toLocaleString()}</TableCell>
+                <TableCell>{c.over65Percent}%</TableCell>
+                <TableCell>{c.ruralPercent}%</TableCell>
+                <TableCell>
                   <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-                      <div className={`h-full rounded-full ${
-                        c.ruralPercent >= 75 ? "bg-red-500" : c.ruralPercent >= 50 ? "bg-amber-500" : "bg-green-500"
-                      }`} style={{ width: `${c.ruralPercent}%` }} />
+                    <div className="w-16 h-1.5 rounded-full bg-surface-800 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          c.ruralPercent >= 75
+                            ? "bg-red-500"
+                            : c.ruralPercent >= 50
+                              ? "bg-amber-500"
+                              : "bg-green-500"
+                        }`}
+                        style={{ width: `${c.ruralPercent}%` }}
+                      />
                     </div>
-                    <span className="text-xs">{c.ruralPercent}%</span>
+                    <span className="text-xs text-surface-500">{c.ruralPercent}%</span>
                   </div>
-                </td>
-                <td className="py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    c.over65Percent >= 25 ? "bg-amber-900 text-amber-300" : "bg-blue-900 text-blue-300"
-                  }`}>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={c.over65Percent >= 25 ? "amber" : "brand"}>
                     {c.over65Percent >= 25 ? "High need" : "Growing"}
-                  </span>
-                </td>
-              </tr>
+                  </Badge>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {mockScenarios.map((s) => (
-          <div key={s.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-            <h3 className="font-semibold text-white mb-3">{s.name}</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center justify-between text-zinc-400">
-                <div className="flex items-center gap-1.5">
+          <Card key={s.id} hover accent="green">
+            <h3 className="font-semibold text-white mb-4">{s.name}</h3>
+            <div className="space-y-2.5 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-surface-400">
                   <DollarSign className="w-3.5 h-3.5 text-green-400" />
-                  <span>Revenue</span>
+                  <span>Projected Revenue</span>
                 </div>
-                <span className="text-white font-medium">${(s.projectedRevenue / 1000000).toFixed(1)}M</span>
+                <span className="text-white font-semibold">${(s.projectedRevenue / 1000000).toFixed(1)}M</span>
               </div>
-              <div className="flex items-center justify-between text-zinc-400">
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Staffing</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-surface-400">
+                  <Users className="w-3.5 h-3.5 text-brand-400" />
+                  <span>Staffing Required</span>
                 </div>
-                <span className="text-white font-medium">{s.staffingRequired}</span>
+                <span className="text-white font-semibold">{s.staffingRequired}</span>
               </div>
-              <div className="flex items-center justify-between text-zinc-400">
-                <div className="flex items-center gap-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-surface-400">
                   <Calendar className="w-3.5 h-3.5 text-amber-400" />
                   <span>Timeline</span>
                 </div>
-                <span className="text-white font-medium">{s.timelineMonths}mo</span>
+                <span className="text-white font-semibold">{s.timelineMonths} months</span>
               </div>
-              <div className="flex items-center justify-between text-zinc-400">
-                <span>Confidence</span>
-                <span className={s.confidence >= 75 ? "text-green-400" : "text-amber-400"}>{s.confidence}%</span>
+              <div className="flex items-center justify-between">
+                <span className="text-surface-400">Confidence</span>
+                <span className={s.confidence >= 75 ? "text-green-400 font-semibold" : "text-amber-400 font-semibold"}>
+                  {s.confidence}%
+                </span>
               </div>
             </div>
-            <div className="mt-3 pt-3 border-t border-zinc-800">
-              <div className="flex items-start gap-1.5 text-xs text-zinc-600">
+            <div className="mt-4 pt-4 border-t border-surface-800">
+              <div className="flex items-start gap-2 text-xs text-surface-600">
                 <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
                 <span>{s.counties.join(", ")}</span>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

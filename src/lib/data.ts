@@ -1,4 +1,4 @@
-import { Competitor, Evidence, BattlecardOld, Report, MaineCounty, CountyDemand, GrowthScenario, LaunchPlanStep, CatalogItem } from "./types"
+import { Competitor, Evidence, Battlecard, Report, MaineCounty, CountyDemand, GrowthScenario, LaunchPlanStep, CatalogItem } from "./types"
 
 export const serviceCatalog = [
   { id: "sl1", name: "Home Healthcare", category: "home-healthcare", description: "Skilled nursing, PT, OT, speech therapy, and home health aide services across Maine" },
@@ -35,28 +35,32 @@ export const mockCompetitors: Competitor[] = [
 ]
 
 export const mockEvidence: Evidence[] = [
-  { id: "e1", competitorId: "c1", source: "Northern Light Annual Report", snippet: "Northern Light Home Care expanded telehealth monitoring for 1,200+ patients across Penobscot and Aroostook counties in 2025", date: "2026-03-20", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed" },
-  { id: "e2", competitorId: "c1", source: "Press Release", snippet: "Northern Light Health opened new home health hub in Bangor serving 7 rural counties", date: "2026-02-10", relevance: 8, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed" },
-  { id: "e3", competitorId: "c2", source: "MaineHealth Website", snippet: "MaineHealth Home Health reports 15% growth in skilled nursing visits across Cumberland and York counties", date: "2026-04-05", relevance: 8, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed" },
-  { id: "e4", competitorId: "c2", source: "DHHS Filing", snippet: "MaineHealth received certificate of need for expanded home health services in Lincoln and Knox counties", date: "2026-01-28", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed" },
-  { id: "e5", competitorId: "c3", source: "Gentiva Corporate", snippet: "Gentiva added wound care certified nurses to their Portland and Lewiston offices targeting chronic wound patients", date: "2026-04-15", relevance: 7, maineRelevance: true, serviceId: "mobile-wound", subServiceId: "mw-chronic-wound", confidence: "confirmed" },
-  { id: "e6", competitorId: "c3", source: "Press Release", snippet: "Gentiva Maine operations restructured under new regional director for Northern New England", date: "2026-03-01", relevance: 6, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "likely" },
-  { id: "e7", competitorId: "c4", source: "Amedisys Investor Day", snippet: "Amedisys identified Maine as a 'key expansion state' for 2026 with focus on Kennebec and Androscoggin counties", date: "2026-05-01", relevance: 10, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-chronic-disease", confidence: "confirmed" },
-  { id: "e8", competitorId: "c4", source: "Press Release", snippet: "Amedisys partnering with MaineGeneral Health for post-acute care transitions in Augusta region", date: "2026-04-20", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed" },
-  { id: "e9", competitorId: "c5", source: "Interim HealthCare News", snippet: "Interim HealthCare of Maine launched companion care program for seniors aging in place in Portland metro", date: "2026-02-22", relevance: 6, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-palliative", confidence: "likely" },
-  { id: "e10", competitorId: "c6", source: "VNA Home Health Report", snippet: "VNA of Maine reports 98% patient satisfaction but struggles with rural coverage gaps in Washington County", date: "2026-03-15", relevance: 7, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed" },
-  { id: "e11", competitorId: "c1", source: "Maine DHHS Data", snippet: "Northern Light captured 22% of Maine's home health Medicare referrals in 2025, highest in the state", date: "2026-04-01", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed" },
-  { id: "e12", competitorId: "c2", source: "MaineHealth News", snippet: "MaineHealth launching home-based wound care pilot in 5 coastal counties starting Q3 2026", date: "2026-05-10", relevance: 9, maineRelevance: true, serviceId: "mobile-wound", subServiceId: "mw-debridement", confidence: "confirmed" },
-  { id: "e13", competitorId: "c3", source: "CMS Data", snippet: "Gentiva's Maine patient outcomes score 3.8/5 stars vs 4.2/5 state average", date: "2026-04-28", relevance: 7, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-chronic-disease", confidence: "confirmed" },
-  { id: "e14", competitorId: "c4", source: "Amedisys SEC Filing", snippet: "Amedisys plans to hire 40+ clinical staff for Maine operations in 2026", date: "2026-05-05", relevance: 8, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed" },
+  { id: "e1", competitorId: "c1", source: "Northern Light Annual Report", snippet: "Northern Light Home Care expanded telehealth monitoring for 1,200+ patients across Penobscot and Aroostook counties in 2025", date: "2026-03-20", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed", credibility: "official" },
+  { id: "e2", competitorId: "c1", source: "Press Release", snippet: "Northern Light Health opened new home health hub in Bangor serving 7 rural counties", date: "2026-02-10", relevance: 8, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed", credibility: "press" },
+  { id: "e3", competitorId: "c2", source: "MaineHealth Website", snippet: "MaineHealth Home Health reports 15% growth in skilled nursing visits across Cumberland and York counties", date: "2026-04-05", relevance: 8, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed", credibility: "official" },
+  { id: "e4", competitorId: "c2", source: "DHHS Filing", snippet: "MaineHealth received certificate of need for expanded home health services in Lincoln and Knox counties", date: "2026-01-28", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed", credibility: "government" },
+  { id: "e5", competitorId: "c3", source: "Gentiva Corporate", snippet: "Gentiva added wound care certified nurses to their Portland and Lewiston offices targeting chronic wound patients", date: "2026-04-15", relevance: 7, maineRelevance: true, serviceId: "mobile-wound", subServiceId: "mw-chronic-wound", confidence: "confirmed", credibility: "official" },
+  { id: "e6", competitorId: "c3", source: "Press Release", snippet: "Gentiva Maine operations restructured under new regional director for Northern New England", date: "2026-03-01", relevance: 6, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "likely", credibility: "press" },
+  { id: "e7", competitorId: "c4", source: "Amedisys Investor Day", snippet: "Amedisys identified Maine as a 'key expansion state' for 2026 with focus on Kennebec and Androscoggin counties", date: "2026-05-01", relevance: 10, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-chronic-disease", confidence: "confirmed", credibility: "official" },
+  { id: "e8", competitorId: "c4", source: "Press Release", snippet: "Amedisys partnering with MaineGeneral Health for post-acute care transitions in Augusta region", date: "2026-04-20", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed", credibility: "press" },
+  { id: "e9", competitorId: "c5", source: "Interim HealthCare News", snippet: "Interim HealthCare of Maine launched companion care program for seniors aging in place in Portland metro", date: "2026-02-22", relevance: 6, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-palliative", confidence: "likely", credibility: "press" },
+  { id: "e10", competitorId: "c6", source: "VNA Home Health Report", snippet: "VNA of Maine reports 98% patient satisfaction but struggles with rural coverage gaps in Washington County", date: "2026-03-15", relevance: 7, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed", credibility: "official" },
+  { id: "e11", competitorId: "c1", source: "Maine DHHS Data", snippet: "Northern Light captured 22% of Maine's home health Medicare referrals in 2025, highest in the state", date: "2026-04-01", relevance: 9, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-skilled-nursing", confidence: "confirmed", credibility: "government" },
+  { id: "e12", competitorId: "c2", source: "MaineHealth News", snippet: "MaineHealth launching home-based wound care pilot in 5 coastal counties starting Q3 2026", date: "2026-05-10", relevance: 9, maineRelevance: true, serviceId: "mobile-wound", subServiceId: "mw-debridement", confidence: "confirmed", credibility: "press" },
+  { id: "e13", competitorId: "c3", source: "CMS Data", snippet: "Gentiva's Maine patient outcomes score 3.8/5 stars vs 4.2/5 state average", date: "2026-04-28", relevance: 7, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-chronic-disease", confidence: "confirmed", credibility: "government" },
+  { id: "e14", competitorId: "c4", source: "Amedisys SEC Filing", snippet: "Amedisys plans to hire 40+ clinical staff for Maine operations in 2026", date: "2026-05-05", relevance: 8, maineRelevance: true, serviceId: "home-health", subServiceId: "hh-post-hospital", confidence: "confirmed", credibility: "official" },
 ]
 
-export const mockBattlecardsOld: BattlecardOld[] = [
+export const mockBattlecardsOld: Battlecard[] = [
   {
     id: "bc1", competitorId: "c1", competitorName: "Northern Light Home Care",
     strengths: ["Dominant 22% Maine market share", "Strong referral network across Northern Light Health system", "Telehealth infrastructure in rural counties", "Established presence in 10+ Maine counties"],
     weaknesses: ["Higher cost structure than independent providers", "Slower response times in southern Maine", "Less specialized wound care capability", "Limited therapy services in rural areas"],
     andwellAdvantage: ["Faster patient intake (24h vs 72h industry avg)", "Superior wound care outcomes in rural settings", "More flexible care scheduling", "Deep local relationships in underserved counties"],
+    leadWith: ["Andwell offers faster patient intake — 24h vs Northern Light's 72h average", "Superior rural wound care outcomes with mobile units covering all 16 counties"],
+    questions: ["How does Northern Light handle wound care referrals in rural counties?", "What is their average response time for new patient intake?", "How do they staff therapy services in Aroostook and Washington counties?"],
+    safeWording: ["Andwell differentiates on rural coverage and wound care specialization", "Northern Light has strong telehealth but limited mobile wound capability"],
+    whatNotToSay: ["Do not claim Northern Light lacks telehealth — they lead in this area", "Do not make unsupported claims about their quality metrics"],
     winRate: 48, lastUpdated: "2026-05-19", maineMarketShare: 22,
   },
   {
@@ -64,6 +68,10 @@ export const mockBattlecardsOld: BattlecardOld[] = [
     strengths: ["Strong brand recognition in southern Maine", "Integrated with MaineHealth hospital system", "Excellent coastal county coverage", "High patient satisfaction scores"],
     weaknesses: ["Limited presence in northern/western Maine", "Less experience with mobile wound care", "Slower to adopt new care models", "Higher staff turnover in rural areas"],
     andwellAdvantage: ["Full-state coverage vs regional focus", "Mobile wound care specialization", "Better rural staffing ratios", "More competitive pricing in mid-coast region"],
+    leadWith: ["Andwell covers all 16 Maine counties — MaineHealth is concentrated in southern/coastal areas", "Our mobile wound care program is more established than their coastal pilot"],
+    questions: ["What is MaineHealth's actual wound care patient volume?", "How many rural counties do they serve with skilled nursing?", "What's their staff retention rate in rural placements?"],
+    safeWording: ["MaineHealth has strong coastal presence but limited northern/western coverage", "Andwell's mobile wound program is more mature and covers more territory"],
+    whatNotToSay: ["Do not claim MaineHealth has poor outcomes — their satisfaction scores are high", "Do not misrepresent their coastal pilot as inferior"],
     winRate: 52, lastUpdated: "2026-05-19", maineMarketShare: 18,
   },
   {
@@ -71,6 +79,10 @@ export const mockBattlecardsOld: BattlecardOld[] = [
     strengths: ["National brand and resources", "Wound care certification programs", "Corporate investment capacity", "Established Portland/Lewiston presence"],
     weaknesses: ["Below-average CMS star rating in Maine", "Limited rural county coverage", "Decisions made by regional rather than local leadership", "Higher patient turnover"],
     andwellAdvantage: ["Local decision-making and agility", "Better CMS outcomes (4.5 vs 3.8 stars)", "Coverage in all 16 Maine counties", "Deeper community integration"],
+    leadWith: ["Andwell's CMS rating exceeds Gentiva's Maine performance by 0.7 stars", "Local decision-making means faster response to Maine patient needs"],
+    questions: ["What is Gentiva's actual patient outcome data in Maine?", "How many rural counties do they serve beyond Portland/Lewiston?", "What's their average intake-to-visit time?"],
+    safeWording: ["Gentiva has national resources and certification programs", "Andwell competes on local responsiveness and proven Maine outcomes"],
+    whatNotToSay: ["Do not claim Gentiva has poor clinical quality without citing CMS data directly", "Do not overstate the star rating difference"],
     winRate: 61, lastUpdated: "2026-05-18", maineMarketShare: 8,
   },
   {
@@ -78,6 +90,10 @@ export const mockBattlecardsOld: BattlecardOld[] = [
     strengths: ["Aggressive Maine expansion plans", "Strong hospital partnerships (MaineGeneral)", "National best practices and training", "Capital for hiring spree (40+ staff)"],
     weaknesses: ["New to Maine market - limited relationships", "Unknown quality track record locally", "National staffing model vs local needs", "Potential integration challenges"],
     andwellAdvantage: ["10+ years of Maine market experience", "Existing relationships across all major health systems", "Proven rural care delivery model", "Higher staff retention and local knowledge"],
+    leadWith: ["Andwell has 10+ years of Maine-specific experience vs Amedisys as a new entrant", "Our relationships with every major Maine health system are established, not being built"],
+    questions: ["What are Amedisys' actual quality outcomes in Maine?", "How many Maine-based clinical staff do they currently employ?", "What is their timeline for establishing rural county operations?"],
+    safeWording: ["Amedisys is a credible national competitor investing in Maine", "Andwell's advantage is established relationships and proven rural delivery"],
+    whatNotToSay: ["Do not claim Amedisys will fail — they have significant resources", "Do not dismiss their MaineGeneral partnership"],
     winRate: 58, lastUpdated: "2026-05-18", maineMarketShare: 5,
   },
   {
@@ -85,6 +101,10 @@ export const mockBattlecardsOld: BattlecardOld[] = [
     strengths: ["Nationally recognized brand", "Companion care differentiation", "Portland metro presence"],
     weaknesses: ["Very limited Maine footprint", "No rural county services", "Limited to companion/personal care", "No wound care specialty"],
     andwellAdvantage: ["Full clinical service line", "Rural county coverage", "Wound care expertise", "Insurance/Medicare certified across all Maine counties"],
+    leadWith: ["Andwell offers full clinical services including wound care — Interim is limited to companion care in Maine", "All 16 Maine counties vs Interim's Portland-only metro presence"],
+    questions: ["Does Interim plan to expand clinical services in Maine?", "What is their Medicare certification status in Maine?", "How many clinical staff do they employ locally?"],
+    safeWording: ["Interim is a national brand but has very limited Maine clinical presence", "Andwell competes on comprehensive clinical services and full county coverage"],
+    whatNotToSay: ["Do not claim Interim is incompetent — they serve a different market segment", "Do not overstate the threat level"],
     winRate: 72, lastUpdated: "2026-05-17", maineMarketShare: 3,
   },
   {
@@ -92,6 +112,10 @@ export const mockBattlecardsOld: BattlecardOld[] = [
     strengths: ["98% patient satisfaction", "Long history in Maine communities", "Trusted VNA brand", "Coastal county presence"],
     weaknesses: ["Struggles with rural coverage", "Limited technology investment", "No wound care specialization", "Financial constraints limiting expansion"],
     andwellAdvantage: ["Advanced mobile wound technology", "Data-driven outcomes tracking", "Full Maine county coverage", "Financial stability for growth investment"],
+    leadWith: ["Andwell's mobile wound technology and outcomes tracking exceed VNA's capabilities", "Full 16-county coverage vs VNA's limited rural reach"],
+    questions: ["What is VNA's actual wound care patient volume?", "How many rural counties do they serve with home health?", "What is their technology investment roadmap?"],
+    safeWording: ["VNA has strong community trust and high satisfaction scores", "Andwell differentiates on technology, wound care, and rural coverage"],
+    whatNotToSay: ["Do not claim VNA provides poor care — their 98% satisfaction is real", "Do not dismiss their community relationships"],
     winRate: 65, lastUpdated: "2026-05-16", maineMarketShare: 4,
   },
 ]

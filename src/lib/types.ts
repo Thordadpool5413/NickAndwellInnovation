@@ -2,6 +2,23 @@ export type Lens = "executive" | "sales-leader" | "sales-rep" | "admin"
 export type PersistenceBackend = "json" | "supabase" | "mongodb"
 export type ReviewStatus = "pending" | "approved" | "edited" | "rejected"
 export type ThreatLevel = "low" | "medium" | "high" | "critical"
+export type SourceCredibility = "government" | "official" | "press" | "scraped" | "unknown"
+
+export const SOURCE_CREDIBILITY_WEIGHT: Record<SourceCredibility, number> = {
+  government: 1.0,
+  official: 0.9,
+  press: 0.7,
+  scraped: 0.4,
+  unknown: 0.3,
+}
+
+export const SOURCE_CREDIBILITY_LABEL: Record<SourceCredibility, string> = {
+  government: "Government",
+  official: "Official",
+  press: "Press",
+  scraped: "Web",
+  unknown: "Unknown",
+}
 
 export interface ServiceLine { id: string; name: string; description: string }
 export interface SubService { id: string; serviceId: string; name: string; description: string; evidenceIds: string[] }
@@ -32,6 +49,7 @@ export interface Evidence {
   id: string; competitorId: string; source: string; snippet: string
   date: string; relevance: number; maineRelevance: boolean
   serviceId?: string; subServiceId?: string; confidence?: string
+  credibility?: SourceCredibility
 }
 
 export interface ServiceScore {
@@ -52,10 +70,11 @@ export interface BattlecardOld {
 }
 
 export interface Battlecard {
-  competitorId: string; competitorName: string
+  id?: string; competitorId: string; competitorName: string
+  strengths: string[]; weaknesses: string[]; andwellAdvantage: string[]
   leadWith: string[]; questions: string[]
   safeWording: string[]; whatNotToSay: string[]
-  winRate: number; maineMarketShare: number
+  winRate: number; maineMarketShare: number; lastUpdated: string
 }
 
 export interface GapFinding {

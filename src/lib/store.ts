@@ -54,17 +54,7 @@ function seedIfEmpty() {
     reviewStatus: "pending" as const,
   }))
   write("findings", findings)
-  const battlecards: Battlecard[] = mockBattlecardsOld.map(b => ({
-    competitorId: b.competitorId,
-    competitorName: b.competitorName,
-    leadWith: b.andwellAdvantage,
-    questions: [],
-    safeWording: ["Not found publicly in competitor materials"],
-    whatNotToSay: ["Do not make unsupported claims"],
-    winRate: b.winRate,
-    maineMarketShare: b.maineMarketShare,
-  }))
-  write("battlecards", battlecards)
+  write("battlecards", mockBattlecardsOld)
 }
 
 export const store = {

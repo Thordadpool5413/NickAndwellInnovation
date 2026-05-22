@@ -2,6 +2,8 @@
 
 import { Activity, CheckCircle, XCircle } from "lucide-react"
 import { useEffect, useState } from "react"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 interface ServiceStatus {
   name: string
@@ -31,49 +33,72 @@ export default function SystemCheckPage() {
           try {
             const res = await fetch(s.endpoint)
             const latency = `${(performance.now() - start).toFixed(0)}ms`
-            return { ...s, status: res.ok ? "healthy" as const : "unhealthy" as const, latency }
+            const status: "healthy" | "unhealthy" = res.ok ? "healthy" : "unhealthy"
+            return { ...s, status, latency }
           } catch {
-            return { ...s, status: "unhealthy" as const, latency: "err" }
+            return { ...s, status: "unhealthy" as "healthy" | "unhealthy", latency: "err" }
           }
-        })
+        }),
       )
       setChecks(results)
     }
     checkAll()
   }, [])
 
+  const healthyCount = checks.filter((c) => c.status === "healthy").length
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-bold text-white">System Check</h2>
-        <p className="text-zinc-500 text-sm mt-1">Diagnostics and service health monitoring</p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">System Check</h1>
+        <p className="text-surface-500 text-sm mt-1.5">Diagnostics and service health monitoring</p>
       </div>
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <Activity className="w-5 h-5 text-green-400" />
-          <span className="text-sm text-zinc-400">All {checks.filter(c => c.status === "healthy").length}/{checks.length} services operational</span>
+
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-600/10 flex items-center justify-center">
+              <Activity className="w-5 h-5 text-green-400" />
+            </div>
+            <div>
+              <span className="text-sm text-surface-300 font-medium">Service Status</span>
+              <div className="flex items-center gap-2 mt-0.5">
+                <Badge variant={healthyCount === checks.length ? "green" : "amber"}>
+                  {healthyCount}/{checks.length} operational
+                </Badge>
+              </div>
+            </div>
+          </div>
         </div>
+
         <div className="space-y-2">
           {checks.map((s) => (
-            <div key={s.name} className="flex items-center justify-between py-2 px-3 rounded-lg bg-zinc-950">
+            <div
+              key={s.name}
+              className="flex items-center justify-between py-3 px-4 rounded-xl bg-surface-950 border border-surface-800 hover:border-surface-700 transition-colors"
+            >
               <div className="flex items-center gap-3">
                 {!s.status || s.status === "checking" ? (
-                  <Activity className="w-4 h-4 text-zinc-600 animate-pulse" />
+                  <Activity className="w-4 h-4 text-surface-600 animate-pulse" />
                 ) : s.status === "healthy" ? (
                   <CheckCircle className="w-4 h-4 text-green-400" />
                 ) : (
                   <XCircle className="w-4 h-4 text-red-400" />
                 )}
-                <span className="text-sm text-zinc-300">{s.name}</span>
+                <span className="text-sm text-surface-300 font-medium">{s.name}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-zinc-600">{s.endpoint}</span>
-                {s.latency && <span className="text-xs text-zinc-500">{s.latency}</span>}
+                <span className="text-xs text-surface-600 font-mono">{s.endpoint}</span>
+                {s.latency && (
+                  <span className={`text-xs font-mono ${s.status === "healthy" ? "text-green-400" : "text-red-400"}`}>
+                    {s.latency}
+                  </span>
+                )}
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

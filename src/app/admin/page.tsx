@@ -3,97 +3,149 @@
 import { useState } from "react"
 import { Key, Database, Shield, Save } from "lucide-react"
 import { useLens } from "@/lib/lens-context"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 export default function AdminPage() {
   const { lens } = useLens()
   const [apiKey, setApiKey] = useState("")
   const [saved, setSaved] = useState(false)
+  const [backend, setBackend] = useState("json")
 
   if (lens !== "admin") {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-zinc-500">Admin access required. Switch to Admin lens to view settings.</p>
+      <div className="flex items-center justify-center py-24">
+        <div className="text-center">
+          <div className="w-14 h-14 rounded-2xl bg-surface-800 flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-7 h-7 text-surface-500" />
+          </div>
+          <p className="text-surface-400 font-medium">Admin access required</p>
+          <p className="text-surface-600 text-sm mt-1">Switch to Admin lens to view settings.</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl animate-fade-in">
       <div>
-        <h2 className="text-2xl font-bold text-white">Settings</h2>
-        <p className="text-zinc-500 text-sm mt-1">Admin configuration for the Andwell Command Center</p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Settings</h1>
+        <p className="text-surface-500 text-sm mt-1.5">Admin configuration for the Andwell Command Center</p>
       </div>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Key className="w-5 h-5 text-amber-400" />
-          <h3 className="font-semibold text-white">OpenAI API Key</h3>
+      <Card>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-600/10 flex items-center justify-center">
+            <Key className="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">OpenAI API Key</h3>
+            <p className="text-xs text-surface-500 mt-0.5">
+              Required for AI-powered analysis. Set via{" "}
+              <code className="font-mono text-brand-400 bg-surface-800 px-1.5 py-0.5 rounded text-xs">
+                OPENAI_API_KEY
+              </code>{" "}
+              env variable or enter below.
+            </p>
+          </div>
         </div>
-        <p className="text-sm text-zinc-500 mb-3">Required for AI-powered analysis in Ask the Hub and competitor research. Set via <code className="text-blue-400 bg-zinc-800 px-1 rounded">OPENAI_API_KEY</code> environment variable or enter below.</p>
         <div className="flex gap-3">
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => { setApiKey(e.target.value); setSaved(false) }}
-            placeholder="sk-..."
-            className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 font-mono"
-          />
-          <button onClick={() => setSaved(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-            <Save className="w-4 h-4" /> Save
-          </button>
+          <div className="flex-1">
+            <Input
+              type="password"
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value)
+                setSaved(false)
+              }}
+              placeholder="sk-..."
+            />
+          </div>
+          <Button onClick={() => setSaved(true)} icon={<Save className="w-4 h-4" />}>
+            Save
+          </Button>
         </div>
-        {saved && <p className="text-xs text-green-400 mt-2">Key saved for this session (set OPENAI_API_KEY env var for persistence)</p>}
-      </div>
+        {saved && (
+          <p className="text-xs text-green-400 mt-2">
+            Key saved for this session (set OPENAI_API_KEY env var for persistence)
+          </p>
+        )}
+      </Card>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Database className="w-5 h-5 text-blue-400" />
-          <h3 className="font-semibold text-white">Data Persistence</h3>
+      <Card>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
+            <Database className="w-5 h-5 text-brand-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">Data Persistence</h3>
+            <p className="text-xs text-surface-500 mt-0.5">Choose where to store application data</p>
+          </div>
         </div>
-        <div className="space-y-3">
-          <label className="flex items-center justify-between p-3 rounded-lg bg-zinc-950 cursor-pointer">
-            <div>
-              <p className="text-sm text-white font-medium">Local Storage</p>
-              <p className="text-xs text-zinc-500">Data saved in browser (default)</p>
-            </div>
-            <input type="radio" name="persistence" defaultChecked className="text-blue-500" />
-          </label>
-          <label className="flex items-center justify-between p-3 rounded-lg bg-zinc-950 cursor-pointer">
-            <div>
-              <p className="text-sm text-white font-medium">Supabase</p>
-              <p className="text-xs text-zinc-500">PostgreSQL via Supabase</p>
-            </div>
-            <input type="radio" name="persistence" className="text-blue-500" />
-          </label>
-          <label className="flex items-center justify-between p-3 rounded-lg bg-zinc-950 cursor-pointer">
-            <div>
-              <p className="text-sm text-white font-medium">MongoDB</p>
-              <p className="text-xs text-zinc-500">MongoDB Atlas or local instance</p>
-            </div>
-            <input type="radio" name="persistence" className="text-blue-500" />
-          </label>
-        </div>
-      </div>
-
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <Shield className="w-5 h-5 text-green-400" />
-          <h3 className="font-semibold text-white">Lens Permissions</h3>
-        </div>
-        <div className="space-y-2 text-sm">
+        <div className="space-y-2">
           {[
-            { lens: "Executive", access: "Dashboard, Battlecards, Board Room, Growth Command, Reports, Competitor Intake, Ask the Hub" },
-            { lens: "Sales Leader", access: "Dashboard, Battlecards, Evidence Matrix, Catalog, Growth Command, Launch Plan, Competitor Intake, Reports, Ask the Hub" },
+            { id: "json", title: "Local Storage", desc: "Data saved as JSON files on disk (default)" },
+            { id: "supabase", title: "Supabase", desc: "PostgreSQL via Supabase" },
+            { id: "mongodb", title: "MongoDB", desc: "MongoDB Atlas or local instance" },
+          ].map((opt) => (
+            <label
+              key={opt.id}
+              onClick={() => setBackend(opt.id)}
+              className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+                backend === opt.id
+                  ? "bg-brand-600/10 border-brand-700"
+                  : "bg-surface-950 border-surface-800 hover:border-surface-700"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                  backend === opt.id ? "border-brand-500 bg-brand-500" : "border-surface-600"
+                }`}
+              >
+                {backend === opt.id && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+              <div>
+                <p className="text-sm text-white font-medium">{opt.title}</p>
+                <p className="text-xs text-surface-500">{opt.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-green-600/10 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-green-400" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-white">Lens Permissions</h3>
+            <p className="text-xs text-surface-500 mt-0.5">Role-based access to application features</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {[
+            {
+              lens: "Executive",
+              access:
+                "Dashboard, Battlecards, Board Room, Growth Command, Reports, Competitor Intake, Ask the Hub",
+            },
+            {
+              lens: "Sales Leader",
+              access:
+                "Dashboard, Battlecards, Evidence Matrix, Catalog, Growth Command, Launch Plan, Competitor Intake, Reports, Ask the Hub",
+            },
             { lens: "Sales Rep", access: "Dashboard, Battlecards, Evidence Matrix, Catalog, Ask the Hub" },
             { lens: "Admin", access: "Full access including Settings" },
           ].map((p) => (
-            <div key={p.lens} className="flex items-start gap-3 p-2 rounded">
-              <span className="text-blue-400 font-medium w-28 shrink-0">{p.lens}</span>
-              <span className="text-zinc-500">{p.access}</span>
+            <div key={p.lens} className="flex items-start gap-3 p-3 rounded-xl bg-surface-950 border border-surface-800">
+              <span className="text-brand-400 font-medium w-24 shrink-0 text-sm">{p.lens}</span>
+              <span className="text-surface-500 text-sm leading-relaxed">{p.access}</span>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

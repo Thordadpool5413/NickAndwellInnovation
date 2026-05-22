@@ -1,86 +1,196 @@
 "use client"
 
-import { useState } from "react"
-import { Search, ExternalLink, Star, MapPin } from "lucide-react"
+import { useState, useMemo } from "react"
+import { Star, MapPin, ExternalLink, ShieldCheck, Newspaper, Globe, Building2 } from "lucide-react"
 import { mockEvidence, mockCompetitors } from "@/lib/data"
+import { SOURCE_CREDIBILITY_LABEL, SourceCredibility } from "@/lib/types"
+import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { EmptyState } from "@/components/ui/empty-state"
+
+const credibilityIcons: Record<SourceCredibility, React.ReactNode> = {
+  government: <Building2 className="w-3 h-3" />,
+  official: <ShieldCheck className="w-3 h-3" />,
+  press: <Newspaper className="w-3 h-3" />,
+  scraped: <Globe className="w-3 h-3" />,
+  unknown: <Globe className="w-3 h-3" />,
+}
+
+const credibilityVariants: Record<SourceCredibility, "brand" | "green" | "amber" | "default"> = {
+  government: "brand",
+  official: "green",
+  press: "amber",
+  scraped: "default",
+  unknown: "default",
+}
 
 export default function EvidenceMatrixPage() {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
   const [maineOnly, setMaineOnly] = useState(false)
+  const [groupByService, setGroupByService] = useState(false)
 
-  const filtered = mockEvidence.filter((e) => {
-    const matchSearch = e.snippet.toLowerCase().includes(search.toLowerCase()) || e.source.toLowerCase().includes(search.toLowerCase())
+  const allEvidence = mockEvidence
+
+  const filtered = allEvidence.filter((e) => {
+    const matchSearch =
+      e.snippet.toLowerCase().includes(search.toLowerCase()) ||
+      e.source.toLowerCase().includes(search.toLowerCase())
     const matchFilter = filter === "all" || e.competitorId === filter
     const matchMaine = !maineOnly || e.maineRelevance
     return matchSearch && matchFilter && matchMaine
   })
 
+  const competitorOptions = [
+    { value: "all", label: "All Competitors" },
+    ...mockCompetitors.map((c) => ({ value: c.id, label: c.name })),
+  ]
+
+  const serviceGroups = useMemo(() => {
+    if (!groupByService) return null
+    const groups: Record<string, typeof filtered> = {}
+    for (const ev of filtered) {
+      const serviceName =
+        ev.serviceId === "home-health"
+          ? "Home Healthcare"
+          : ev.serviceId === "mobile-wound"
+            ? "Mobile Wound Care"
+            : ev.serviceId === "therapy-care"
+              ? "Therapy Care"
+              : "Other"
+      if (!groups[serviceName]) groups[serviceName] = []
+      groups[serviceName].push(ev)
+    }
+    return groups
+  }, [filtered, groupByService])
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-bold text-white">Evidence Matrix</h2>
-        <p className="text-zinc-500 text-sm mt-1">Structured Maine market intelligence from competitor monitoring</p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Evidence Matrix</h1>
+        <p className="text-surface-500 text-sm mt-1.5">
+          Structured Maine market intelligence from competitor monitoring
+        </p>
       </div>
+
       <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-zinc-500" />
-          <input
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            search
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search evidence..."
-            className="w-full bg-zinc-900 border border-zinc-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
           />
         </div>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+        <Select value={filter} onChange={(e) => setFilter(e.target.value)} options={competitorOptions} />
+        <button
+          onClick={() => setMaineOnly(!maineOnly)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-all duration-200 ${
+            maineOnly
+              ? "bg-brand-900/30 border-brand-700 text-brand-300"
+              : "bg-surface-900 border-surface-700 text-surface-400 hover:text-surface-200"
+          }`}
         >
-          <option value="all">All Competitors</option>
-          {mockCompetitors.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>
-        <label className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={maineOnly}
-            onChange={(e) => setMaineOnly(e.target.checked)}
-            className="rounded border-zinc-600"
-          />
-          <span className="text-zinc-400">Maine only</span>
-          <MapPin className="w-3 h-3 text-blue-400" />
-        </label>
+          <MapPin className="w-3 h-3" />
+          Maine only
+        </button>
+        <button
+          onClick={() => setGroupByService(!groupByService)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm border transition-all duration-200 ${
+            groupByService
+              ? "bg-purple-900/30 border-purple-700 text-purple-300"
+              : "bg-surface-900 border-surface-700 text-surface-400 hover:text-surface-200"
+          }`}
+        >
+          Group by service
+        </button>
       </div>
+
       <div className="space-y-3">
-        {filtered.map((ev) => {
-          const comp = mockCompetitors.find((c) => c.id === ev.competitorId)
-          return (
-            <div key={ev.id} className={`bg-zinc-900 border rounded-xl p-5 ${ev.maineRelevance ? "border-blue-900" : "border-zinc-800"}`}>
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium text-white">{comp?.name}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-500">{ev.source}</span>
-                  {ev.maineRelevance && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900 text-blue-300">Maine</span>
-                  )}
+        {filtered.length === 0 && (
+          <EmptyState
+            title="No evidence found"
+            description="Try adjusting your search or filters to find intelligence items."
+          />
+        )}
+
+        {!groupByService &&
+          filtered.map((ev) => {
+            const comp = mockCompetitors.find((c) => c.id === ev.competitorId)
+            const credibility = ev.credibility || "unknown"
+            return (
+              <Card key={ev.id} className={ev.maineRelevance ? "border-l-brand-500 border-l-2" : ""}>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-white">{comp?.name || "Unknown"}</span>
+                    <Badge>{ev.source}</Badge>
+                    {ev.maineRelevance && <Badge variant="brand">Maine</Badge>}
+                    <Badge variant={credibilityVariants[credibility as SourceCredibility]}>
+                      {credibilityIcons[credibility as SourceCredibility]}
+                      <span className="ml-1">{SOURCE_CREDIBILITY_LABEL[credibility as SourceCredibility]}</span>
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-400 shrink-0 ml-3">
+                    <Star className="w-3 h-3 fill-current" />
+                    <span className="text-xs font-medium">{ev.relevance}/10</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 text-amber-400">
-                  <Star className="w-3 h-3 fill-current" />
-                  <span className="text-xs">{ev.relevance}/10</span>
+                <p className="text-sm text-surface-300 leading-relaxed">{ev.snippet}</p>
+                <div className="flex items-center gap-2 mt-3 text-xs text-surface-600">
+                  <span>{ev.date}</span>
+                  <ExternalLink className="w-3 h-3" />
                 </div>
+              </Card>
+            )
+          })}
+
+        {groupByService &&
+          serviceGroups &&
+          Object.entries(serviceGroups).map(([serviceName, items]) => (
+            <div key={serviceName}>
+              <div className="flex items-center gap-2 mb-2 mt-4">
+                <h3 className="text-sm font-semibold text-surface-300">{serviceName}</h3>
+                <Badge>{items.length} items</Badge>
               </div>
-              <p className="text-sm text-zinc-300">{ev.snippet}</p>
-              <div className="flex items-center gap-2 mt-3 text-xs text-zinc-600">
-                <span>{ev.date}</span>
-                <ExternalLink className="w-3 h-3" />
+              <div className="space-y-3">
+                {items.map((ev) => {
+                  const comp = mockCompetitors.find((c) => c.id === ev.competitorId)
+                  const credibility = ev.credibility || "unknown"
+                  return (
+                    <Card key={ev.id} className={ev.maineRelevance ? "border-l-brand-500 border-l-2" : ""}>
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium text-white">{comp?.name || "Unknown"}</span>
+                          <Badge>{ev.source}</Badge>
+                          {ev.maineRelevance && <Badge variant="brand">Maine</Badge>}
+                          <Badge variant={credibilityVariants[credibility as SourceCredibility]}>
+                            {credibilityIcons[credibility as SourceCredibility]}
+                            <span className="ml-1">{SOURCE_CREDIBILITY_LABEL[credibility as SourceCredibility]}</span>
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-1 text-amber-400 shrink-0 ml-3">
+                          <Star className="w-3 h-3 fill-current" />
+                          <span className="text-xs font-medium">{ev.relevance}/10</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-surface-300 leading-relaxed">{ev.snippet}</p>
+                      <div className="flex items-center gap-2 mt-3 text-xs text-surface-600">
+                        <span>{ev.date}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </div>
+                    </Card>
+                  )
+                })}
               </div>
             </div>
-          )
-        })}
+          ))}
       </div>
-      <p className="text-xs text-zinc-600">{filtered.length} of {mockEvidence.length} evidence items</p>
+
+      <p className="text-xs text-surface-600">
+        {filtered.length} of {allEvidence.length} evidence items
+      </p>
     </div>
   )
 }

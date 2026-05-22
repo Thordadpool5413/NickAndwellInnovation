@@ -1,25 +1,44 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, RefreshCw, CheckCircle, Clock, AlertCircle, MapPin, FileText, ExternalLink } from "lucide-react"
+import { Plus, RefreshCw, CheckCircle, Clock, AlertCircle, MapPin, FileText, ExternalLink, Globe } from "lucide-react"
 import { mockCompetitors } from "@/lib/data"
 import type { Competitor, CrawlResult } from "@/lib/types"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 export default function CompetitorIntakePage() {
   const [competitors, setCompetitors] = useState<Competitor[]>(mockCompetitors)
   const [url, setUrl] = useState("")
   const [scraping, setScraping] = useState<string | null>(null)
+  const [urlError, setUrlError] = useState("")
   const [results, setResults] = useState<Record<string, CrawlResult>>({})
 
+  const isValidUrl = (str: string) => {
+    try {
+      const u = new URL(str)
+      return u.protocol === "http:" || u.protocol === "https:"
+    } catch { return false }
+  }
+
   const addCompetitor = async () => {
-    if (!url.trim()) return
-    const name = url.replace(/https?:\/\/(www\.)?/, "").split(".")[0]
+    const trimmed = url.trim()
+    if (!trimmed) return
+    if (!isValidUrl(trimmed)) {
+      setUrlError("Please enter a valid URL (https://...)")
+      return
+    }
+    setUrlError("")
+
+    const name = trimmed.replace(/https?:\/\/(www\.)?/, "").split(".")[0]
     const id = `c${Date.now()}`
     const newComp: Competitor = {
       id,
       name: name.charAt(0).toUpperCase() + name.slice(1),
-      website: url,
+      website: trimmed,
       addedAt: new Date().toISOString().split("T")[0],
       lastCrawled: null,
       status: "crawling",
@@ -31,10 +50,18 @@ export default function CompetitorIntakePage() {
     setScraping(id)
 
     try {
+      await fetch("/api/competitors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmed, name: newComp.name }),
+      })
+    } catch {}
+
+    try {
       const crawlRes = await fetch("/api/crawl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, competitorId: id }),
+        body: JSON.stringify({ url: trimmed, competitorId: id }),
       })
       const crawlData = await crawlRes.json()
       const crawl = crawlData.crawl as CrawlResult
@@ -56,105 +83,108 @@ export default function CompetitorIntakePage() {
   const statusIcon = (s: Competitor["status"]) => {
     switch (s) {
       case "complete": return <CheckCircle className="w-4 h-4 text-green-400" />
-      case "crawling": return <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
+      case "crawling": return <RefreshCw className="w-4 h-4 text-brand-400 animate-spin" />
       case "error": return <AlertCircle className="w-4 h-4 text-red-400" />
-      default: return <Clock className="w-4 h-4 text-zinc-500" />
+      default: return <Clock className="w-4 h-4 text-surface-500" />
     }
   }
 
-  const threatColor = (t: string) => {
+  const threatVariant = (t: string) => {
     switch (t) {
-      case "critical": return "bg-red-900 text-red-300"
-      case "high": return "bg-orange-900 text-orange-300"
-      case "medium": return "bg-amber-900 text-amber-300"
-      default: return "bg-green-900 text-green-300"
+      case "critical": return "red" as const
+      case "high": return "orange" as const
+      case "medium": return "amber" as const
+      default: return "green" as const
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       <div>
-        <h2 className="text-2xl font-bold text-white">Competitor Intake</h2>
-        <p className="text-zinc-500 text-sm mt-1">Add competitor URLs to research their Maine market presence</p>
-      </div>
-      <div className="flex gap-3">
-        <input
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addCompetitor()}
-          placeholder="https://competitor.com"
-          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-        />
-        <button onClick={addCompetitor} disabled={scraping !== null} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-          {scraping ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          {scraping ? "Researching..." : "Add & Research"}
-        </button>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Competitor Intake</h1>
+        <p className="text-surface-500 text-sm mt-1.5">Add competitor URLs to research their Maine market presence</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      <Card>
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <Input
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setUrlError("") }}
+              onKeyDown={(e) => e.key === "Enter" && addCompetitor()}
+              placeholder="https://competitor.com"
+              icon={<Globe className="w-4 h-4 text-surface-500" />}
+            />
+            {urlError && <p className="text-xs text-red-400 mt-1.5">{urlError}</p>}
+          </div>
+          <Button onClick={addCompetitor} loading={scraping !== null} disabled={!url.trim()} icon={!scraping ? <Plus className="w-4 h-4" /> : undefined}>
+            {scraping ? "Researching..." : "Add & Research"}
+          </Button>
+        </div>
+      </Card>
+
+      <div className="space-y-3">
         {competitors.map((c) => {
           const result = results[c.id]
           return (
-            <div key={c.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+            <Card key={c.id} className="overflow-hidden !p-0">
               <div className="p-5 flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">{statusIcon(c.status)}</div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Link href={`/competitors/${c.id}`} className="font-semibold text-white hover:text-blue-400 transition-colors">
+                <div className="flex items-start gap-4 min-w-0">
+                  <div className="mt-1 shrink-0">{statusIcon(c.status)}</div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Link href={`/competitors/${c.id}`} className="font-semibold text-white hover:text-brand-400 transition-colors truncate">
                         {c.name}
                       </Link>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${threatColor(c.threatLevel)}`}>
-                        {c.threatLevel}
-                      </span>
+                      <Badge variant={threatVariant(c.threatLevel)}>{c.threatLevel}</Badge>
                     </div>
-                    <p className="text-sm text-zinc-500">{c.website}</p>
+                    <p className="text-sm text-surface-500 truncate mt-0.5">{c.website}</p>
                     <div className="flex items-center gap-3 mt-2">
-                      <span className="text-xs text-zinc-600">Added: {c.addedAt}</span>
-                      {c.lastCrawled && <span className="text-xs text-zinc-600">Crawled: {c.lastCrawled}</span>}
+                      <span className="text-xs text-surface-600">Added: {c.addedAt}</span>
+                      {c.lastCrawled && <span className="text-xs text-surface-600">Crawled: {c.lastCrawled}</span>}
                     </div>
                     {c.maineCounties.length > 0 && (
-                      <div className="flex items-center gap-1 mt-2 text-xs text-zinc-500">
-                        <MapPin className="w-3 h-3" />
+                      <div className="flex items-center gap-1.5 mt-2 text-xs text-surface-500">
+                        <MapPin className="w-3 h-3 shrink-0" />
                         {c.maineCounties.join(", ")}
                       </div>
                     )}
                   </div>
                 </div>
-                <Link
-                  href={`/competitors/${c.id}`}
-                  className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 mt-1"
-                >
-                  <ExternalLink className="w-3 h-3" /> Profile
+                <Link href={`/competitors/${c.id}`} className="shrink-0 ml-4">
+                  <Button variant="ghost" size="sm" icon={<ExternalLink className="w-3 h-3" />}>
+                    Profile
+                  </Button>
                 </Link>
               </div>
 
               {result && (
-                <div className="border-t border-zinc-800 px-5 py-4 bg-zinc-950">
-                  <div className="flex items-center gap-2 text-xs text-zinc-500 mb-3">
+                <div className="border-t border-surface-800 px-5 py-4 bg-surface-950/50">
+                  <div className="flex items-center gap-2 text-xs text-surface-500 mb-3">
                     <FileText className="w-3.5 h-3.5" />
                     Crawl Results
                   </div>
-                  <p className="text-sm text-zinc-300 mb-3">{result.summary}</p>
+                  <p className="text-sm text-surface-300 mb-3">{result.summary || "No summary available"}</p>
                   {result.servicesFound.length > 0 && (
                     <div className="mb-2">
-                      <span className="text-xs text-zinc-600">Services: </span>
-                      <span className="text-xs text-zinc-400">{result.servicesFound.join(", ")}</span>
+                      <span className="text-xs text-surface-600">Services: </span>
+                      <span className="text-xs text-surface-400">{result.servicesFound.join(", ")}</span>
                     </div>
                   )}
                   {result.maineMentions.length > 0 && (
                     <div>
-                      <span className="text-xs text-zinc-600">Maine mentions: </span>
-                      <span className="text-xs text-zinc-400">{result.maineMentions.length} found</span>
+                      <span className="text-xs text-surface-600">Maine mentions: </span>
+                      <span className="text-xs text-surface-400">{result.maineMentions.length} found</span>
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </Card>
           )
         })}
       </div>
-      <p className="text-xs text-zinc-600">{competitors.length} competitor(s) tracked</p>
+
+      <p className="text-xs text-surface-600">{competitors.length} competitor(s) tracked</p>
     </div>
   )
 }
