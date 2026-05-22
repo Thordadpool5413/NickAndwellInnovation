@@ -1,5 +1,7 @@
 export interface LLMProvider {
   name: string;
+  model?: string;
+  transport?: string;
   call(prompt: string, options: { maxTokens: number; temperature: number }): Promise<string>;
 }
 
