@@ -6,7 +6,7 @@ import { easings, durations, interpolate } from "../utils/animations";
 interface AnimatedNumberProps {
   value?: number;
   duration?: number;
-  easing?: string;
+  easing?: readonly number[];
   format?: (n: number) => string;
   className?: string;
 }
@@ -25,9 +25,9 @@ export default function AnimatedNumber({ value = 0, duration = durations.normal,
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       let easedProgress = progress;
-      if (easing === easings.easeOut) {
+      if (easing === (easings.easeOut as readonly number[])) {
         easedProgress = 1 - Math.pow(1 - progress, 3);
-      } else if (easing === easings.easeInOut) {
+      } else if (easing === (easings.easeInOut as readonly number[])) {
         easedProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
       }
       const newValue = interpolate(prevValue, value, easedProgress);
