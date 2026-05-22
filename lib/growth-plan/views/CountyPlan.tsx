@@ -4,16 +4,14 @@ import React from "react";
 import Card from "../components/Card";
 import Metric from "../components/Metric";
 import Badge from "../components/Badge";
-import ServiceBadge from "../components/ServiceBadge";
 import MaineMap from "../components/MaineMap";
 import { useDarkMode } from "../components/DarkModeContext";
-import { GrowthRow } from "../data/constants";
-import { getCountyIntelligence } from "../utils/calculations";
+import { getCountyIntelligence, type CountyMathRow } from "../utils/calculations";
 import { currency, number, percent } from "../utils/formatters";
 import { themeClasses } from "../utils/themeClasses";
 
 interface CountyPlanProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
   selectedCounty: string;
   setSelectedCounty: (county: string) => void;
 }

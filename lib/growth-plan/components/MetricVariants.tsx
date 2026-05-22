@@ -3,7 +3,6 @@
 import React from "react";
 import { useDarkMode } from "./DarkModeContext";
 import { TrendingUp, TrendingDown } from "lucide-react";
-import AnimatedNumber, { AnimatedCurrency, AnimatedPercent } from "./AnimatedNumber";
 import { TrendIndicator } from "./EnhancedTooltip";
 
 interface MetricCardProps {

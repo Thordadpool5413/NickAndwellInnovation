@@ -9,12 +9,12 @@ import Card from "../components/Card";
 import Metric from "../components/Metric";
 import SectionHeader from "../components/SectionHeader";
 import { useDarkMode } from "../components/DarkModeContext";
-import { COLORS, GrowthRow } from "../data/constants";
-import { getStaffingModel } from "../utils/calculations";
-import { currency, number } from "../utils/formatters";
+import { COLORS } from "../data/constants";
+import { getStaffingModel, type CountyMathRow } from "../utils/calculations";
+import { currency } from "../utils/formatters";
 
 interface StaffingModelProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
 }
 
 export default function StaffingModel({ rows }: StaffingModelProps) {

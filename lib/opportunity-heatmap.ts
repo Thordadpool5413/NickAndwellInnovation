@@ -1,5 +1,5 @@
 import type { GrowthRow, GrowthServiceName } from './growth-plan';
-import { cmsCountyMarket, growthServices, launchPlan, staffingRatios } from './growth-plan';
+import { cmsCountyMarket, launchPlan, staffingRatios } from './growth-plan';
 
 export type HeatCategory = 'Launch Now' | 'Validate' | 'Monitor' | 'Do Not Launch';
 
@@ -51,9 +51,6 @@ const heatLabels: Record<HeatDimension, string> = {
 
 function scoreDimension(rows: GrowthRow[], county: string, dim: HeatDimension): { raw: number; score: number; label: string } {
   const countyRows = rows.filter((r) => r.county === county);
-  const hhRow = countyRows.find((r) => r.service === 'Home Healthcare');
-  const woundRow = countyRows.find((r) => r.service === 'Mobile Wound');
-  const therapyRow = countyRows.find((r) => r.service === 'Therapy Care');
   const market = cmsMarket[county];
   const plan = launchPlan.find((p) => p.county === county);
 

@@ -92,3 +92,56 @@ export function claimStatusTone(status: ClaimStatus): 'neutral' | 'green' | 'amb
   if (status === 'Internal only') return 'blue';
   return 'red';
 }
+
+const safeRewritePatterns: [RegExp, string][] = [
+  [/guarantee/gi, 'is designed to'],
+  [/100[%]/g, 'consistently'],
+  [/\bbest\b/gi, 'well-suited'],
+  [/\bleading\b/gi, 'notable'],
+  [/number one/gi, 'highly regarded'],
+  [/top rated/gi, 'well reviewed'],
+  [/only (provider|company|organization)/gi, 'one of the providers'],
+  [/\bexclusive\b/gi, 'focused'],
+  [/\bunmatched\b/gi, 'distinctive'],
+  [/lowest (price|cost|rate)/gi, 'competitive'],
+  [/\bcheaper\b/gi, 'more cost-effective'],
+  [/\bfree\b/gi, 'no additional cost'],
+  [/no (cost|charge|fee)/gi, 'included'],
+  [/covers? everything/gi, 'covers a broad range of'],
+  [/all (insurance|plans)/gi, 'many insurance plans'],
+  [/accept everyone/gi, 'accept a wide range of patients'],
+  [/immediate (admission|enroll|start)/gi, 'prompt'],
+  [/same day (admission|service|start)/gi, 'timely'],
+  [/24\/7 (admission|enroll)/gi, 'around-the-clock'],
+  [/no (wait|waiting) list/gi, 'minimal wait'],
+  [/competitor.*doesn'?t (offer|have|provide)/gi, ''],
+  [/they (don'?t|do not) (offer|have|provide)/gi, ''],
+  [/competitor.*lacks/gi, ''],
+  [/competitor.*fails/gi, ''],
+  [/competitor.*(behind|inferior)/gi, ''],
+  [/we'?re better/gi, 'our approach focuses on'],
+  [/we (beat|win|dominate)/gi, 'we aim to excel at'],
+];
+
+export function generateSafeAlternative(claim: string): string {
+  let safe = claim;
+  for (const [pattern, replacement] of safeRewritePatterns) {
+    safe = safe.replace(pattern, replacement);
+  }
+  safe = safe.replace(/\s+/g, ' ').trim();
+  if (safe === claim || !safe) return claim;
+  return safe;
+}
+
+export function rewriteClaim(claim: string, status: ClaimStatus): { original: string; safe: string; changed: boolean } {
+  if (status === 'Safe') return { original: claim, safe: claim, changed: false };
+  const safe = generateSafeAlternative(claim);
+  return { original: claim, safe, changed: safe !== claim };
+}
+
+export function rewriteAllClaims(claims: CategorizedClaim[]): CategorizedClaim[] {
+  return claims.map((c) => {
+    const { safe, changed } = rewriteClaim(c.claim, c.category);
+    return changed ? { ...c, claim: safe, category: 'Safe', reason: 'Auto-rewritten to safe alternative.' } : c;
+  });
+}

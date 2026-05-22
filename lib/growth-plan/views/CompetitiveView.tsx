@@ -35,7 +35,7 @@ export default function CompetitiveView({ selectedCounty, setSelectedCounty, api
   return (
     <div className="space-y-6">
       <SectionHeader eyebrow="Competitive view" title="Named provider competitor layer">
-        This section is built from the named Home Healthcare and Hospice provider rows in the uploaded code. It shows Andwell's provider file rank, provider file share, named competitors, and the limits of what can and cannot be called true county market share without county attributed volume.
+        This section is built from the named Home Healthcare and Hospice provider rows in the uploaded code. It shows Andwell&apos;s provider file rank, provider file share, named competitors, and the limits of what can and cannot be called true county market share without county attributed volume.
       </SectionHeader>
       <div className="grid gap-4 md:grid-cols-4">
         <Metric label={`${service} providers`} value={summary.providers} detail="Named Maine provider rows loaded." />
@@ -92,7 +92,7 @@ export default function CompetitiveView({ selectedCounty, setSelectedCounty, api
                 <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#334155" : "#e2e8f0"} />
                 <XAxis type="number" tickFormatter={(value) => `${value}%`} tick={{ fill: dark ? "#94a3b8" : "#475569" }} />
                 <YAxis type="category" dataKey="providerName" width={170} tick={{ fontSize: 11, fill: dark ? "#94a3b8" : "#475569" }} />
-                <Tooltip formatter={(value, name) => name === "sharePct" ? `${value}%` : number(value)} contentStyle={dark ? { backgroundColor: "#1e293b", border: "1px solid #334155", color: "#f1f5f9" } : undefined} />
+                <Tooltip formatter={(value, name) => name === "sharePct" ? `${value}%` : number(value as number)} contentStyle={dark ? { backgroundColor: "#1e293b", border: "1px solid #334155", color: "#f1f5f9" } : undefined} />
                 <Bar dataKey="sharePct" name="Provider file share" radius={[0, 8, 8, 0]}>
                   {chartRows.map((row) => <Cell key={row.providerName} fill={row.isAndwellCmsRecord ? COLORS.blue : COLORS.slate} />)}
                 </Bar>

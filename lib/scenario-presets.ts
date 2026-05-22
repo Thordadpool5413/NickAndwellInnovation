@@ -1,5 +1,5 @@
-import type { GrowthScenario } from './growth-plan';
-import { growthDefaultScenario, buildGrowthRows, summarizeGrowth } from './growth-plan';
+import type { GrowthScenario, GrowthRow } from './growth-plan';
+import { buildGrowthRows, summarizeGrowth } from './growth-plan';
 
 export type ScenarioPreset = {
   id: string;

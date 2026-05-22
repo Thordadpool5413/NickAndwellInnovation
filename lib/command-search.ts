@@ -1,4 +1,4 @@
-import type { IntelligenceReport, CompetitorAnalysis, Finding } from './types';
+import type { IntelligenceReport } from './types';
 import { andwellCatalog } from './andwell';
 import { launchPlan } from './growth-plan';
 

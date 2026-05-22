@@ -4,12 +4,12 @@ import React from "react";
 import Card from "../components/Card";
 import ServiceBadge from "../components/ServiceBadge";
 import { useDarkMode } from "../components/DarkModeContext";
-import { GrowthRow } from "../data/constants";
 import { number } from "../utils/formatters";
 import { exportReferralCSV } from "../utils/csvExport";
+import { type CountyMathRow } from "../utils/calculations";
 
 interface ReferralPlanProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
 }
 
 export default function ReferralPlan({ rows }: ReferralPlanProps) {

@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Badge, Panel, Stat, ExpandableSection, SectionGroup, MetricGrid } from '../Shared';
-import { money, whole, toneForStatus } from '../../../lib/command-center/utils';
+import { Badge, Panel, Stat, SectionGroup, MetricGrid } from '../Shared';
+import { money, whole } from '../../../lib/command-center/utils';
 import type { View } from '../../../lib/command-center/types';
 import type { GrowthRow, GrowthTotals } from '../../../lib/growth-plan';
 import type { IntelligenceReport } from '../../../lib/types';

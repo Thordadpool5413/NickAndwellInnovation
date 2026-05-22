@@ -6,22 +6,21 @@ import Metric from "../components/Metric";
 import Badge from "../components/Badge";
 import SectionHeader from "../components/SectionHeader";
 import { useDarkMode } from "../components/DarkModeContext";
-import { COLORS, GrowthRow } from "../data/constants";
-import { getOpportunityScore } from "../utils/calculations";
+import { getOpportunityScore, type CountyMathRow } from "../utils/calculations";
 import { currency, number } from "../utils/formatters";
 
 const tierTone = (tier: string) => tier === "Prime" ? "green" : tier === "Strong" ? "blue" : tier === "Developing" ? "amber" : "slate";
 
 interface OpportunityScoreProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
 }
 
 export default function OpportunityScore({ rows }: OpportunityScoreProps) {
   const { dark } = useDarkMode();
-  const counties = [...new Set(rows.map((r) => r.county))];
+  const counties = useMemo(() => [...new Set(rows.map((r) => r.county))], [rows]);
   const scores = useMemo(
-    () => counties.map((c) => getOpportunityScore(c, rows)).filter(Boolean).sort((a, b) => b.score - a.score),
-    [rows],
+    () => counties.map((c) => getOpportunityScore(c, rows)).filter((x): x is NonNullable<typeof x> => x != null).sort((a, b) => b.score - a.score),
+    [rows, counties],
   );
 
   const avgScore = scores.length > 0 ? Math.round(scores.reduce((s, c) => s + c.score, 0) / scores.length) : 0;

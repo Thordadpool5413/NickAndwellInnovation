@@ -32,7 +32,7 @@ export default function LaunchChecklist() {
       </div>
 
       {phases.map((phase) => (
-        <Card key={phase} title={phase} eyebrow="Launch phase">
+        <Card key={phase ?? ""} title={phase ?? ""} eyebrow="Launch phase">
           <div className="space-y-3">
             {launchPlan.filter((item) => item.phase === phase).map((item) => (
               <div key={item.task} className={`flex items-start justify-between gap-4 rounded-2xl border p-4 ${dark ? "border-slate-700 bg-slate-700/30" : "border-slate-100 bg-slate-50"}`}>
@@ -40,7 +40,7 @@ export default function LaunchChecklist() {
                   <p className={`font-black ${dark ? "text-white" : "text-slate-950"}`}>{item.task}</p>
                   {item.owner && <p className={`mt-1 text-sm ${dark ? "text-slate-400" : "text-slate-500"}`}>Owner: {item.owner}</p>}
                 </div>
-                <Badge tone={statusTone(item.status)}>{item.status}</Badge>
+                <Badge tone={statusTone(item.status ?? "")}>{item.status}</Badge>
               </div>
             ))}
           </div>

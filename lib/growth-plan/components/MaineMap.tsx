@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useDarkMode } from "./DarkModeContext";
 import { HEATMAP_MODES } from "../data/constants";
-import { getHeatmapValue, getCompetitiveThreatScore } from "../utils/calculations";
+import { getHeatmapValue, getCompetitiveThreatScore, type CountyMathRow } from "../utils/calculations";
 
 const countyPaths: Record<string, string> = {
   York: "M 85 680 L 130 680 L 145 650 L 170 640 L 185 610 L 175 580 L 150 570 L 120 575 L 100 590 L 80 620 L 75 655 Z",
@@ -80,7 +80,7 @@ export default function MaineMap({ rows, selectedCounty, onSelectCounty }: Maine
   if (heatmapMode !== "priority" && rows) {
     Object.keys(countyPaths).forEach((county) => {
       if (launchCounties.has(county)) {
-        heatValues[county] = getHeatmapValue(county, heatmapMode, rows);
+        heatValues[county] = getHeatmapValue(county, heatmapMode, rows as CountyMathRow[]);
       }
     });
   }

@@ -11,8 +11,14 @@ const audiences: BriefAudience[] = ['Executive', 'Sales Leader', 'Field Rep', 'B
 
 export function StrategyBrief({ currentReport, growthRows, totals }: { currentReport: IntelligenceReport | null; growthRows: GrowthRow[]; totals: GrowthTotals }) {
   const [audience, setAudience] = useState<BriefAudience>('Executive');
-
   const brief = useMemo(() => generateStrategyBrief(audience, currentReport, growthRows, totals), [audience, currentReport, growthRows, totals]);
+
+  if (!currentReport) {
+    return <div className="card" style={{ padding: '24px', textAlign: 'center' }}>
+      <h3 className="text-subhead" style={{ margin: '0 0 8px' }}>No report loaded</h3>
+      <p className="text-small muted">Load or run a competitive scan to generate strategy briefs.</p>
+    </div>;
+  }
 
   return <>
     <section className="section">
@@ -27,20 +33,20 @@ export function StrategyBrief({ currentReport, growthRows, totals }: { currentRe
         {audiences.map((a) => <button key={a} className={`btn ${audience === a ? 'primary' : ''}`} onClick={() => setAudience(a)}>{a}</button>)}
       </div>
     </Panel>
-    <SectionGroup title={brief.title} action={<span className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>{brief.generatedAt}</span>}>
+    <SectionGroup title={brief.title} action={<span className="text-xs muted">{brief.generatedAt}</span>}>
       <div className="card">
         <p className="text-body">{brief.summary}</p>
         <div className="grid cols4" style={{ margin: '16px 0' }}>
-          {brief.keyMetrics.map((m) => <div key={m.label} className="hover-card" style={{ padding: '12px', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)' }}>
-            <p className="text-xs text-overline" style={{ color: 'var(--color-text-tertiary)', margin: '0 0 4px' }}>{m.label}</p>
-            <strong style={{ fontSize: '20px' }}>{m.value}</strong>
+          {brief.keyMetrics.map((m) => <div key={m.label} className="metric-card-sm">
+            <p className="text-xs text-overline muted" style={{ margin: '0 0 4px' }}>{m.label}</p>
+            <strong className="metric-value">{m.value}</strong>
           </div>)}
         </div>
-        <div style={{ display: 'grid', gap: '16px' }}>
+        <div className="section-body-grid">
           {brief.sections.map((section, i) =>
             <div key={i}>
               <h4 className="text-subhead" style={{ marginBottom: '4px' }}>{section.heading}</h4>
-              <p className="text-small" style={{ color: 'var(--color-text-secondary)', margin: 0 }}>{section.content}</p>
+              <p className="text-small text-secondary" style={{ margin: 0 }}>{section.content}</p>
             </div>
           )}
         </div>

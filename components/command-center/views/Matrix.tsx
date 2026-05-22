@@ -89,7 +89,7 @@ function ExpandedFinding({ finding }: { finding: Finding }) {
 
 export function Matrix({ currentReport, matrixFilter, setMatrixFilter, matrixSearch, setMatrixSearch }: { currentReport: IntelligenceReport | null; matrixFilter: MatrixFilter; setMatrixFilter: (filter: MatrixFilter) => void; matrixSearch: string; setMatrixSearch: (value: string) => void }) {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const findings = currentReport?.allFindings || [];
+  const findings = useMemo(() => currentReport?.allFindings || [], [currentReport]);
   const stats = useMemo(() => {
     const scored = findings.filter((finding) => finding.matrixScore);
     const averageScore = scored.length ? Math.round(scored.reduce((sum, finding) => sum + (finding.matrixScore?.overall || 0), 0) / scored.length) : 0;
@@ -121,7 +121,7 @@ export function Matrix({ currentReport, matrixFilter, setMatrixFilter, matrixSea
   }
 
   return <>
-    <section className="section"><div><h1>Evidence Matrix</h1><p className="text-body">Scrubs competitor websites, compares each finding to Andwell's service taxonomy, scores evidence quality, and keeps field language tied to citations.</p></div><Badge>{filtered.length} visible</Badge></section>
+    <section className="section"><div><h1>Evidence Matrix</h1><p className="text-body">Scrubs competitor websites, compares each finding to Andwell&apos;s service taxonomy, scores evidence quality, and keeps field language tied to citations.</p></div><Badge>{filtered.length} visible</Badge></section>
     {!currentReport ? <Panel title="No report loaded"><p className="text-body">Run or load a report to populate the matrix.</p></Panel> : <>
       <div className="grid cols4">
         <Stat label="Matrix score" value={stats.averageScore || 'N/A'} hint="Average scored finding" />
@@ -139,7 +139,7 @@ export function Matrix({ currentReport, matrixFilter, setMatrixFilter, matrixSea
         const details = computeConfidenceDetails({ status: finding.competitorStatus, sourceCount: sourceCount(finding), hasFreshSource: sourceCount(finding) > 0, hasCmsSupport: false, hasInternalValidation: finding.reviewStatus === 'Approved for sales use', competitorOverlap: finding.competitorStatus === 'Clearly offered' ? 'High' : finding.competitorStatus === 'Not found publicly' ? 'Low' : 'Moderate', humanReviewed: finding.reviewStatus === 'Approved for sales use' || finding.reviewStatus === 'Rejected' });
         const isExpanded = expandedRows.has(finding.id);
         return <React.Fragment key={finding.id}>
-          <tr onClick={() => toggleRow(finding.id)} style={{ cursor: 'pointer' }}>
+          <tr onClick={() => toggleRow(finding.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(finding.id); } }} tabIndex={0} role="button" aria-expanded={isExpanded} style={{ cursor: 'pointer' }}>
             <td><strong>{finding.competitorName}</strong><small>{isExpanded ? 'Hide evidence' : 'Open evidence'}</small></td>
             <td><strong>{finding.serviceLine}</strong><small>{finding.clearlyMatchedSubservices}/{finding.totalSubservices} subservices matched</small></td>
             <td><Badge tone={finding.competitorStatus === 'Clearly offered' ? 'green' : finding.competitorStatus === 'Not found publicly' ? 'blue' : 'amber'}>{finding.competitorStatus}</Badge></td>

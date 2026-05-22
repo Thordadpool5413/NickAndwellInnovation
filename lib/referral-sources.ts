@@ -1,5 +1,5 @@
-import type { ReferralSourceProfile, ReferralSourceType, IntelligenceReport, CompetitorAnalysis } from './types';
-import { andwellCatalog, referralAudiences } from './andwell';
+import type { ReferralSourceProfile, ReferralSourceType, IntelligenceReport } from './types';
+import { andwellCatalog } from './andwell';
 
 const sourceProfiles: Record<ReferralSourceType, { leadService: string; painPoints: string[]; discoveryQs: string[]; positioning: string; cta: string; serviceLines: string[] }> = {
   Hospital: {

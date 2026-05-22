@@ -7,20 +7,13 @@ import { toneForStatus } from '../../../lib/command-center/utils';
 import type { View, RoleView } from '../../../lib/command-center/types';
 import type { AndwellExpertBrief, ExpertAction } from '../../../lib/andwell-expert';
 
-function toneForPriority(priority: ExpertAction['priority']) {
-  if (priority === 'Critical') return 'red';
-  if (priority === 'High') return 'amber';
-  if (priority === 'Medium') return 'blue';
-  return 'green';
-}
-
 function ActionCard({ action, setView }: { action: ExpertAction; setView: (view: View) => void }) {
   const destination: View = action.owner === 'Growth' ? 'growth' : action.owner === 'Field' ? 'battlecards' : action.owner === 'Admin' ? 'governance' : action.owner === 'Clinical' ? 'launch' : 'decisions';
   return <div className="battleCard hover-card" style={{ display: 'grid', gap: '12px' }}>
     <div className="row spread" style={{ alignItems: 'flex-start' }}>
       <div>
         <div className="row" style={{ gap: '6px', marginBottom: '8px' }}>
-          <Badge tone={toneForPriority(action.priority)}>{action.priority}</Badge>
+          <Badge tone={toneForStatus(action.priority)}>{action.priority}</Badge>
           <Badge>{action.owner}</Badge>
           {action.reviewRequired ? <Badge tone="amber">Review required</Badge> : <Badge tone="green">Field safe</Badge>}
         </div>
@@ -92,11 +85,11 @@ export function Dashboard({ expertBrief, roleView, setView, clearLegacyBrowserSt
       <h1>What should Andwell do next, why, with what evidence, and how do we execute it safely?</h1>
       <p className="text-body">{expertBrief.executiveSummary}</p>
       <div className="row" style={{ gap: '8px', flexWrap: 'wrap' }}>
-        <button className="btn primary" onClick={() => setView('ask')}>Ask Andwell Expert</button>
-        <button className="btn" onClick={() => setView('intake')}>Run Competitive Scan</button>
-        <button className="btn" onClick={() => setView('growth')}>Review Growth Strategy</button>
-        <button className="btn" onClick={() => setView('board-packet')}>Prepare Board Packet</button>
-        <button className="btn" onClick={clearLegacyBrowserStorage}>Clear cache keys</button>
+        <button className="btn primary" onClick={() => setView('ask')} aria-label="Ask Andwell Expert">Ask Andwell Expert</button>
+        <button className="btn" onClick={() => setView('intake')} aria-label="Run Competitive Scan">Run Competitive Scan</button>
+        <button className="btn" onClick={() => setView('growth')} aria-label="Review Growth Strategy">Review Growth Strategy</button>
+        <button className="btn" onClick={() => setView('board-packet')} aria-label="Prepare Board Packet">Prepare Board Packet</button>
+        <button className="btn" onClick={clearLegacyBrowserStorage} aria-label="Clear cache keys">Clear cache keys</button>
       </div>
     </section>
 

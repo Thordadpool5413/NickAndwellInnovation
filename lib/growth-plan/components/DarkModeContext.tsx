@@ -19,7 +19,7 @@ export function DarkModeProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    try { localStorage.setItem("andwell-dark", dark); } catch {}
+    try { localStorage.setItem("andwell-dark", String(dark)); } catch {}
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
 

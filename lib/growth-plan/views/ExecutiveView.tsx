@@ -7,16 +7,15 @@ import {
 } from "recharts";
 import Card from "../components/Card";
 import Metric from "../components/Metric";
-import Badge from "../components/Badge";
 import { useDarkMode } from "../components/DarkModeContext";
-import { COLORS, GrowthRow, GrowthTotals } from "../data/constants";
+import { COLORS, GrowthTotals } from "../data/constants";
 import { namedProviderRows } from "../data/providers";
-import { rollupByService, getCompetitiveThreatScore } from "../utils/calculations";
+import { rollupByService, getCompetitiveThreatScore, type CountyMathRow } from "../utils/calculations";
 import { cmsCountyMarketData as cmsCountyMarket } from "../data/cmsCountyMarket";
 import { currency, number, percent } from "../utils/formatters";
 
 interface ExecutiveViewProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
   totals: GrowthTotals;
   apiReports?: { id: string; competitorsAnalyzed: number }[];
   apiCompetitors?: { name: string }[];
@@ -30,7 +29,7 @@ export default function ExecutiveView({ rows, totals, apiReports, apiCompetitors
 
   const avgThreat = Object.keys(cmsCountyMarket)
     .map((c) => getCompetitiveThreatScore(c))
-    .filter(Boolean)
+    .filter((x): x is NonNullable<typeof x> => x != null)
     .reduce((s, t, _, a) => s + t.score / a.length, 0);
 
   const totalFFS = Object.values(cmsCountyMarket).reduce((s, m) => s + m.ffs, 0);
@@ -121,7 +120,7 @@ export default function ExecutiveView({ rows, totals, apiReports, apiCompetitors
                 <XAxis dataKey="service" stroke={dark ? "#94a3b8" : "#64748b"} style={{ fontSize: "12px" }} />
                 <YAxis stroke={dark ? "#94a3b8" : "#64748b"} style={{ fontSize: "12px" }} />
                 <Tooltip
-                  formatter={(value) => currency(value)}
+                  formatter={(value) => currency(value as number)}
                   contentStyle={{
                     background: dark ? "#1e293b" : "#fff",
                     border: `1px solid ${dark ? "#334155" : "#e2e8f0"}`,
@@ -142,7 +141,7 @@ export default function ExecutiveView({ rows, totals, apiReports, apiCompetitors
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Tooltip
-                  formatter={(value) => currency(value)}
+                  formatter={(value) => currency(value as number)}
                   contentStyle={{
                     background: dark ? "#1e293b" : "#fff",
                     border: `1px solid ${dark ? "#334155" : "#e2e8f0"}`,
@@ -157,7 +156,7 @@ export default function ExecutiveView({ rows, totals, apiReports, apiCompetitors
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
-                  label={({ service, value }) => `${service}: ${percent(value / totals.y1Revenue)}`}
+                  label={({ payload, value }) => `${payload.service}: ${percent((value ?? 0) / totals.y1Revenue)}`}
                 >
                   {rollupByService(rows).map((_, index) => (
                     <Cell key={`cell-${index}`} fill={Object.values(COLORS)[index % Object.keys(COLORS).length]} />

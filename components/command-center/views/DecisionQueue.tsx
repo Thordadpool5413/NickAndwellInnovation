@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Badge, Panel, SectionGroup } from '../Shared';
+import { Badge, Panel } from '../Shared';
 import { generateDecisions, applyDecisionAction, urgencyOrder, riskTone } from '../../../lib/decision-queue';
 import type { IntelligenceReport } from '../../../lib/types';
-import type { GrowthRow, GrowthTotals } from '../../../lib/growth-plan';
+import type { GrowthRow } from '../../../lib/growth-plan';
 import type { DecisionType, DecisionStatus, DecisionUrgency } from '../../../lib/decision-queue';
 
 const typeFilters: DecisionType[] = ['Leadership', 'Governance', 'Staffing', 'Growth', 'Competitive', 'Compliance', 'Field enablement', 'Referral'];
@@ -17,10 +17,7 @@ export function DecisionQueue({ currentReport, growthRows }: { currentReport: In
   const [statusFilter, setStatusFilter] = useState<DecisionStatus | 'all'>('all');
 
   const allItems = useMemo(() => {
-    if (!items) {
-      const generated = generateDecisions(currentReport, growthRows);
-      return generated;
-    }
+    if (!items) return generateDecisions(currentReport, growthRows);
     return items;
   }, [items, currentReport, growthRows]);
 

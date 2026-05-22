@@ -16,7 +16,7 @@ import type { CmsCountyData } from "../data/cmsCountyMarket";
 import type { LaunchPlanEntry } from "../data/launchPlan";
 import type { NamedProviderRow } from "../data/providers";
 
-type CountyMathRow = LaunchPlanEntry & {
+export type CountyMathRow = LaunchPlanEntry & {
   meta: ServiceInfo & { margin: number };
   market?: CmsCountyData;
   basis: string;

@@ -112,7 +112,6 @@ export function ComparisonIndicator({ current, baseline, label = "vs Baseline", 
   formatter?: (n: number) => string;
 }) {
   const { dark } = useDarkMode();
-  const fmt = formatter || ((n: number) => n.toFixed(0));
   const difference = current - baseline;
   const percentDiff = baseline === 0 ? 0 : (difference / baseline) * 100;
   const isPositive = difference > 0;

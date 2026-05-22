@@ -1,6 +1,5 @@
 import type { IntelligenceReport } from './types';
 import type { GrowthRow, GrowthTotals, StaffingPlanItem } from './growth-plan';
-import { andwellCatalog } from './andwell';
 
 export type BriefAudience = 'Executive' | 'Sales Leader' | 'Field Rep' | 'Board' | 'Compliance' | 'Referral Partner';
 
@@ -123,7 +122,6 @@ export function generateExecutiveNarrative(report?: IntelligenceReport | null, g
   const topThreat = report?.competitorScores?.sort((a, b) => (b.serviceLineMatchScore + b.subserviceDepthScore) - (a.serviceLineMatchScore + a.subserviceDepthScore))[0];
   const topOpp = report?.competitorScores?.sort((a, b) => b.andwellDifferentiationScore - a.andwellDifferentiationScore)[0];
   const priorityCounties = growthRows?.filter((r) => r.launchGroup === 'Priority 1') || [];
-  const y1Rev = totals ? formatMoney(totals.revenue[0]) : 'N/A';
   const y3Rev = totals ? formatMoney(totals.revenue[2]) : 'N/A';
   const totalRevenue = totals ? formatMoney(totals.totalRevenue) : 'N/A';
 
@@ -169,7 +167,6 @@ export function generateBoardPacket(report?: IntelligenceReport | null, growthRo
   const now = new Date().toISOString().split('T')[0];
   const priorityRows = growthRows?.filter((r) => r.launchGroup === 'Priority 1') || [];
   const allPriority = growthRows?.filter((r) => r.launchGroup !== 'Priority 3') || [];
-  const totalRevenue = totals ? formatMoney(totals.totalRevenue) : 'N/A';
   const y1Rev = totals ? formatMoney(totals.revenue[0]) : 'N/A';
 
   const financialModel = totals ? [

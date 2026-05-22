@@ -12,8 +12,6 @@ export function LaunchPlan({ rows, totals, staffingPlan, setView }: { rows: Grow
   const priorityRows = rows.filter((row) => row.launchGroup === 'Priority 1');
   const alerts = useMemo(() => computeStaffingAlerts(rows), [rows]);
   const criticalAlerts = alerts.filter((a) => a.severity === 'critical');
-  const warningAlerts = alerts.filter((a) => a.severity === 'warning');
-
   return <>
     <section className="hero launchHero">
       <div className="row spread" style={{ marginBottom: '8px' }}>

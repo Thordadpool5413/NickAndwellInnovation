@@ -1,6 +1,5 @@
-import type { IntelligenceReport, Finding, CompetitorScore } from './types';
+import type { IntelligenceReport } from './types';
 import type { GrowthRow } from './growth-plan';
-import { andwellCatalog } from './andwell';
 
 export type DecisionUrgency = 'Immediate' | 'Today' | 'This week' | 'This month' | 'This quarter';
 export type DecisionType = 'Leadership' | 'Governance' | 'Staffing' | 'Growth' | 'Competitive' | 'Compliance' | 'Field enablement' | 'Referral';
@@ -22,15 +21,26 @@ export type DecisionItem = {
   createdAt: string;
 };
 
-const owners = ['CEO', 'COO', 'Sales Leader', 'Clinical Leader', 'Marketing', 'Admin'] as const;
+const owners: Record<DecisionType, string> = {
+  Leadership: 'CEO',
+  Governance: 'Admin',
+  Staffing: 'COO',
+  Growth: 'COO',
+  Competitive: 'Sales Leader',
+  Compliance: 'Clinical Leader',
+  'Field enablement': 'Sales Leader',
+  Referral: 'Sales Leader',
+};
 
-function randomOwner(): string {
-  return owners[Math.floor(Math.random() * owners.length)];
+function deterministicOwner(type: DecisionType, index: number): string {
+  const candidates: DecisionType[] = ['Leadership', 'Governance', 'Staffing', 'Growth', 'Competitive', 'Compliance', 'Field enablement', 'Referral'];
+  if (owners[type]) return owners[type];
+  return candidates[index % candidates.length];
 }
 
 function pickUrgency(risk: 'High' | 'Medium' | 'Low'): DecisionUrgency {
-  if (risk === 'High') return Math.random() > 0.5 ? 'Immediate' : 'Today';
-  if (risk === 'Medium') return Math.random() > 0.5 ? 'This week' : 'This month';
+  if (risk === 'High') return 'Today';
+  if (risk === 'Medium') return 'This week';
   return 'This quarter';
 }
 
@@ -44,7 +54,7 @@ export function generateDecisions(report?: IntelligenceReport | null, growthRows
       decisions.push({
         id: `dec-insight-${decisions.length}`,
         type: 'Leadership',
-        owner: randomOwner(),
+        owner: deterministicOwner('Leadership', decisions.length),
         urgency: pickUrgency(risk),
         risk,
         title: insight.title,

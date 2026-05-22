@@ -8,6 +8,10 @@ export interface LaunchPlanEntry {
   reason: string;
   action: string;
   accounts: string[];
+  phase?: string;
+  status?: string;
+  task?: string;
+  owner?: string;
 }
 
 export const launchPlanData: LaunchPlanEntry[] = [

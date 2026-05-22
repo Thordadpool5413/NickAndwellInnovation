@@ -48,7 +48,7 @@ export function CommandSearch({ currentReport, onNavigate }: { currentReport: In
   };
 
   if (!open) {
-    return <button className="btn" onClick={() => setOpen(true)} title="Search (Ctrl+K)">Search</button>;
+    return <button className="btn" onClick={() => setOpen(true)} title="Search (Ctrl+K)" aria-label="Open search (Ctrl+K)">Search</button>;
   }
 
   return <>
@@ -57,7 +57,7 @@ export function CommandSearch({ currentReport, onNavigate }: { currentReport: In
       background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
       display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
       paddingTop: '80px'
-    }} onClick={() => setOpen(false)}>
+    }} onClick={() => setOpen(false)} role="dialog" aria-modal="true" aria-label="Search">
       <div style={{
         background: 'var(--color-bg-primary)', borderRadius: '12px',
         border: '1px solid var(--color-border)',
@@ -81,7 +81,7 @@ export function CommandSearch({ currentReport, onNavigate }: { currentReport: In
             : results.length === 0
               ? <p className="text-small" style={{ padding: '16px', textAlign: 'center', color: 'var(--color-text-tertiary)' }}>No results found for &ldquo;{query}&rdquo;. Try a different search term.</p>
               : <div style={{ display: 'grid', gap: '4px' }}>{results.map((r, i) =>
-                <div key={i} className="hover-card" style={{
+                <div key={i} className="hover-card" role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNavigate(viewMap[r.type] || 'dashboard'); } }} style={{
                   padding: '12px', borderRadius: '8px', cursor: 'pointer',
                   border: '1px solid transparent',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',

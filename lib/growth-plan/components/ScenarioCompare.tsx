@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { DEFAULT_SCENARIO } from "../data/constants";
 import { buildRows } from "../utils/calculations";
-import { currency, number, percent } from "../utils/formatters";
+import { currency, number } from "../utils/formatters";
 import { useDarkMode } from "./DarkModeContext";
 
 const PRESET_SCENARIOS: Record<string, { conversionRate: number; hhCapture: number[]; woundCapture: number[]; therapyCapture: number[]; marginOverrides: Record<string, number> }> = {
@@ -62,7 +62,7 @@ export default function ScenarioCompare({ currentScenario }: ScenarioCompareProp
   const { dark } = useDarkMode();
   const [compareKey, setCompareKey] = useState("Conservative");
 
-  const currentRows = buildRows(currentScenario);
+  const currentRows = buildRows({ ...currentScenario, marginOverrides: currentScenario.marginOverrides ?? {} });
   const compareRows = buildRows(PRESET_SCENARIOS[compareKey]);
 
   const summarize = (rows: any[]) => ({

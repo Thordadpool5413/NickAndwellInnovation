@@ -26,13 +26,22 @@ const objectionOptions = [
   'We need faster response times'
 ];
 
-function pickOne<T>(items: T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
+function scoreItem(item: string, context: string): number {
+  const ctx = context.toLowerCase();
+  const norm = item.toLowerCase();
+  let score = 10;
+  const words = norm.split(/\s+/);
+  for (const word of words) {
+    if (word.length > 3 && ctx.includes(word)) score += 5;
+  }
+  if (ctx.includes(norm)) score += 15;
+  return score;
 }
 
-function pickN<T>(items: T[], n: number): T[] {
-  const shuffled = [...items].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(n, items.length));
+function pickN<T>(items: T[], n: number, context?: string): T[] {
+  if (!items.length) return [];
+  const scored = items.map((item) => ({ item, score: context ? scoreItem(String(item), context) : 10 }));
+  return scored.sort((a, b) => b.score - a.score).slice(0, Math.min(n, items.length)).map((e) => e.item);
 }
 
 export function buildBattlecard(params: {
@@ -68,14 +77,14 @@ export function buildBattlecard(params: {
   ];
 
   const positioning = catalogEntry
-    ? `Andwell's ${serviceLine} in ${county} is publicly described with ${pickN(subservices, 3).join(', ')}. The key differentiator is ${catalogEntry.description.split('.')[0].toLowerCase()}. ${safeAngle}`
+    ? `Andwell's ${serviceLine} in ${county} is publicly described with ${pickN(subservices, 3, serviceLine).join(', ')}. The key differentiator is ${catalogEntry.description.split('.')[0].toLowerCase()}. ${safeAngle}`
     : `Andwell provides ${serviceDesc} across ${county} and surrounding areas, with a focus on coordinated care and patient-centered outcomes.`;
 
   const opening = `Thank you for the opportunity to discuss ${serviceLine} in ${county}. Andwell serves patients across ${county} with ${serviceDesc}. I would love to learn more about your current referral patterns and how we can support your team.`;
 
   const close = `Let me suggest a next step: I will send you our ${serviceLine} overview specific to ${county}, and we can schedule a brief follow-up to discuss any questions. Would that work?`;
 
-  const objectionResponse = `I understand your concern about "${objection}". Here is what I would share: ${safeAngle} In addition, Andwell's ${serviceLine} team in ${county} is focused on ${pickN(subservices, 2).join(' and ') || 'coordinated, patient-centered care'}. I would welcome the chance to show you how our approach differs.`;
+  const objectionResponse = `I understand your concern about "${objection}". Here is what I would share: ${safeAngle} In addition, Andwell's ${serviceLine} team in ${county} is focused on ${pickN(subservices, 2, serviceLine).join(' and ') || 'coordinated, patient-centered care'}. I would welcome the chance to show you how our approach differs.`;
 
   return {
     competitor,

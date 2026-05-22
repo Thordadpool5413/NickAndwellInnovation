@@ -20,11 +20,11 @@ export default function CmsData() {
       county,
       ...market,
       providerDensity: Math.round((market.hh.prov / (market.ffs / 10000)) * 10) / 10,
-      revenuePerUser: Math.round(market.hh.pay / market.hh.users),
+      revenuePerUser: Math.round((market.hh.pay ?? 0) / market.hh.users),
     }))
     .sort((a, b) => b.ffs - a.ffs);
 
-  const totalHHPay = rows.reduce((sum, row) => sum + row.hh.pay, 0);
+  const totalHHPay = rows.reduce((sum, row) => sum + (row.hh.pay ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -80,9 +80,9 @@ export default function CmsData() {
                   <td className={`px-5 py-4 text-right ${dark ? "text-slate-300" : ""}`}>{number(row.ffs)}</td>
                   <td className={`px-5 py-4 text-right ${dark ? "text-slate-300" : ""}`}>{row.hh.prov}</td>
                   <td className={`px-5 py-4 text-right font-black ${row.providerDensity > 3 ? "text-amber-600" : dark ? "text-emerald-400" : "text-emerald-600"}`}>{row.providerDensity}/10K</td>
-                  <td className={`px-5 py-4 text-right ${dark ? "text-slate-300" : ""}`}>{(row.hh.rate * 100).toFixed(1)}%</td>
+                  <td className={`px-5 py-4 text-right ${dark ? "text-slate-300" : ""}`}>{((row.hh.rate ?? 0) * 100).toFixed(1)}%</td>
                   <td className={`px-5 py-4 text-right font-black ${dark ? "text-blue-400" : "text-blue-700"}`}>{currency(row.revenuePerUser)}</td>
-                  <td className={`px-5 py-4 text-right ${dark ? "text-slate-300" : ""}`}>{currency(row.hh.pay)}</td>
+                  <td className={`px-5 py-4 text-right ${dark ? "text-slate-300" : ""}`}>{currency(row.hh.pay ?? 0)}</td>
                 </tr>
               ))}
             </tbody>

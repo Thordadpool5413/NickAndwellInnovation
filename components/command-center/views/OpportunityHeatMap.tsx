@@ -9,8 +9,6 @@ import type { HeatCategory } from '../../../lib/opportunity-heatmap';
 
 export function OpportunityHeatMap({ rows, totals }: { rows: GrowthRow[]; totals: GrowthTotals }) {
   const [categoryFilter, setCategoryFilter] = useState<HeatCategory | 'all'>('all');
-  const [selectedCounty, setSelectedCounty] = useState<string | null>(null);
-
   const heatMap = useMemo(() => computeCountyHeatMap(rows), [rows]);
   const readiness = useMemo(() => computeReadinessScores(rows), [rows]);
   const alerts = useMemo(() => computeStaffingAlerts(rows), [rows]);
@@ -21,10 +19,6 @@ export function OpportunityHeatMap({ rows, totals }: { rows: GrowthRow[]; totals
   }, [heatMap, categoryFilter]);
 
   const categories = [...new Set(heatMap.map((h) => h.category))] as HeatCategory[];
-  const selectedReadiness = useMemo(() => {
-    if (!selectedCounty) return [];
-    return readiness.filter((r) => r.county === selectedCounty);
-  }, [readiness, selectedCounty]);
 
   const criticalAlerts = alerts.filter((a) => a.severity === 'critical');
   const warningAlerts = alerts.filter((a) => a.severity === 'warning');
@@ -42,7 +36,7 @@ export function OpportunityHeatMap({ rows, totals }: { rows: GrowthRow[]; totals
     </section>
     <div className="grid cols4">
       <Stat label="Year 1 revenue" value={money(totals.revenue[0])} hint={`${whole(totals.starts[0])} starts`} />
-      <Stat label="3 year revenue" value={money(totals.totalRevenue)} hint={`${whole(totals.totalReferrals)} referrals`} />
+      <Stat label="3 year revenue" value={money(totals.totalRevenue)} hint={`${whole(totals.referrals.reduce((a, b) => a + b, 0))} referrals`} />
       <Stat label="Counties scored" value={heatMap.length} hint="Across 3 service lines" />
       <Stat label="Critical alerts" value={criticalAlerts.length} hint="Staffing constraints" />
     </div>
@@ -99,35 +93,19 @@ export function OpportunityHeatMap({ rows, totals }: { rows: GrowthRow[]; totals
               <br />{county.recommendation}
             </div>
 
-            <div className="grid cols2">{selectedReadiness.length === 0 ? readiness.filter((r) => r.county === county.county).map((r) =>
-              <div key={`${r.county}-${r.service}`} className="hover-card" style={{ padding: '12px', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)' }}>
+            <div className="grid cols2">{readiness.filter((r) => r.county === county.county).map((r) =>
+              <div key={`${r.county}-${r.service}`} className="readiness-card">
                 <div className="row spread" style={{ marginBottom: '8px' }}>
                   <Badge tone={readinessTone(r.readinessPercent)}>{r.readinessPercent}% ready</Badge>
                   <Badge>{r.service}</Badge>
                 </div>
-                <div className="meter" style={{ height: '6px', marginBottom: '8px' }}><i style={{ width: `${r.readinessPercent}%` }} /></div>
-                <div style={{ display: 'grid', gap: '4px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                <div className="meter readiness-meter"><i style={{ width: `${r.readinessPercent}%` }} /></div>
+                <div className="readiness-details">
                   <span>Revenue upside: {money(r.revenueUpside)}</span>
                   <span>Staffing: {r.staffingConfidence} | Referrals: {r.referralAccess} | Competition: {r.competitorPressure} | Risk: {r.governanceRisk}</span>
                 </div>
-                {r.gaps.length > 0 && <div style={{ marginTop: '8px' }}>{r.gaps.map((g, i) => <Badge key={i} tone="amber">{g}</Badge>)}</div>}
-                <p className="text-xs" style={{ marginTop: '8px', color: 'var(--color-text-tertiary)' }}>{r.recommendation}</p>
-              </div>
-            ) : selectedReadiness.filter((r) => r.county === county.county).map((r) =>
-              <div key={`${r.county}-${r.service}`} className="hover-card" style={{ padding: '12px', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', background: 'var(--color-bg-secondary)' }}>
-                <div className="row spread" style={{ marginBottom: '8px' }}>
-                  <Badge tone={readinessTone(r.readinessPercent)}>{r.readinessPercent}% ready</Badge>
-                  <Badge>{r.service}</Badge>
-                </div>
-                <div style={{ display: 'grid', gap: '4px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                  <span>Revenue upside: {money(r.revenueUpside)}</span>
-                  <span>Staffing confidence: {r.staffingConfidence}</span>
-                  <span>Referral access: {r.referralAccess}</span>
-                  <span>Competitor pressure: {r.competitorPressure}</span>
-                  <span>Governance risk: {r.governanceRisk}</span>
-                </div>
-                {r.gaps.length > 0 && <div style={{ marginTop: '8px' }}>{r.gaps.map((g, i) => <Badge key={i} tone="amber">{g}</Badge>)}</div>}
-                <p className="text-xs" style={{ marginTop: '8px', color: 'var(--color-text-tertiary)' }}>{r.recommendation}</p>
+                {r.gaps.length > 0 && <div className="readiness-gaps">{r.gaps.map((g, i) => <Badge key={i} tone="amber">{g}</Badge>)}</div>}
+                <p className="text-xs muted" style={{ marginTop: '8px' }}>{r.recommendation}</p>
               </div>
             )}</div>
           </div>

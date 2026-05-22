@@ -3,7 +3,6 @@
 import React, { useMemo } from "react";
 import Card from "../components/Card";
 import Metric from "../components/Metric";
-import Badge from "../components/Badge";
 import SectionHeader from "../components/SectionHeader";
 import { useDarkMode } from "../components/DarkModeContext";
 import { COLORS, GrowthRow } from "../data/constants";
@@ -31,7 +30,6 @@ interface LaunchTimelineProps {
 export default function LaunchTimeline({ rows }: LaunchTimelineProps) {
   const { dark } = useDarkMode();
   const totalMonths = 24;
-  const barWidth = 100;
 
   const countyTimeline = useMemo(() => {
     return rows.map((row) => {

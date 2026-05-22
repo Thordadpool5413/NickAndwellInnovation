@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Badge, Panel, ConfidenceBadge, SectionGroup, ExpandableSection } from '../Shared';
+import { Badge, Panel, SectionGroup } from '../Shared';
 import { toneForStatus } from '../../../lib/command-center/utils';
-import { computeConfidenceDetails } from '../../../lib/smart-ranking';
 import type { AskResponse } from '../../../lib/command-center/types';
 import type { IntelligenceReport } from '../../../lib/types';
 

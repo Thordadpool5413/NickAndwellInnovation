@@ -5,9 +5,9 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import Card from "../components/Card";
 import Badge from "../components/Badge";
 import { useDarkMode } from "../components/DarkModeContext";
-import { COLORS, GrowthRow, GrowthTotals } from "../data/constants";
-import { rollupByService, getOpportunityScore, getCompetitiveThreatScore, getMarketPenetration } from "../utils/calculations";
-import { currency, number, percent } from "../utils/formatters";
+import { GrowthTotals } from "../data/constants";
+import { rollupByService, getOpportunityScore, getCompetitiveThreatScore, getMarketPenetration, type CountyMathRow } from "../utils/calculations";
+import { currency, percent } from "../utils/formatters";
 
 const trafficLight = (value: number, thresholds: { green: number; amber: number }) => {
   if (value >= thresholds.green) return { color: "bg-emerald-500", label: "On track", tone: "green" };
@@ -16,14 +16,14 @@ const trafficLight = (value: number, thresholds: { green: number; amber: number 
 };
 
 interface BoardReportProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
   totals: GrowthTotals;
 }
 
 export default function BoardReport({ rows, totals }: BoardReportProps) {
   const { dark } = useDarkMode();
   const reportRef = useRef<HTMLDivElement>(null);
-  const counties = [...new Set(rows.map((r) => r.county))];
+  const counties = useMemo(() => [...new Set(rows.map((r) => r.county))], [rows]);
   const serviceMix = useMemo(() => rollupByService(rows), [rows]);
 
   const countyStatus = useMemo(() => {
@@ -52,7 +52,7 @@ export default function BoardReport({ rows, totals }: BoardReportProps) {
         oppTier: opp?.tier || "—",
       };
     }).sort((a, b) => b.oppScore - a.oppScore);
-  }, [rows]);
+  }, [rows, counties]);
 
   const riskCounties = countyStatus.filter((c) => c.threatScore > 60 || c.penetration < 0.02);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
@@ -151,7 +151,7 @@ export default function BoardReport({ rows, totals }: BoardReportProps) {
               <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={serviceMix} dataKey="revenue" nameKey="service" cx="50%" cy="50%" outerRadius={80} label={({ service, revenue }) => `${service}: ${currency(revenue)}`}>
+                    <Pie data={serviceMix} dataKey="revenue" nameKey="service" cx="50%" cy="50%" outerRadius={80} label={({ payload }) => `${payload.service}: ${currency(payload.revenue as number)}`}>
                       {serviceMix.map((entry) => (
                         <Cell key={entry.service} fill={entry.color} />
                       ))}

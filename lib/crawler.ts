@@ -1,5 +1,12 @@
 import * as cheerio from 'cheerio';
 import type { CrawledPage, CrawledPageType } from './types';
+import { cacheKey, cacheGet, cacheSet } from './cache';
+import { crawlPdfUrl, hasPdfExtension } from './pdf-extractor';
+
+const useCrawlCache = process.env.USE_CRAWL_CACHE !== '0';
+const crawlCacheTtl = Number(process.env.CRAWL_CACHE_TTL_MS || 3600000);
+const extractPdfContent = process.env.CRAWL_EXTRACT_PDF !== '0';
+const extractImageAltText = process.env.CRAWL_EXTRACT_IMAGE_ALT !== '0';
 
 const strongPaths = ['service','services','program','programs','hospice','home-health','home-care','palliative','wound','dementia','guide','behavioral','therapy','pediatric','maternal','child','referral','refer','locations','service-area','eligibility','admission','admissions','bereavement','audiology','caregiver','specialty','patient','family'];
 const weakPaths = ['career','job','donat','event','privacy','terms','login','wp-admin'];
@@ -171,7 +178,7 @@ function logoAlt($: cheerio.CheerioAPI) {
   return value;
 }
 
-async function fetchHtml(url: string, redirectCount = 0): Promise<string> {
+async function doFetchHtml(url: string, redirectCount = 0): Promise<string> {
   const safeUrl = normalize(url);
   if (!safeUrl) throw new Error('Invalid URL. Use a complete public website address.');
   requireSafePublicTarget(safeUrl);
@@ -196,7 +203,7 @@ async function fetchHtml(url: string, redirectCount = 0): Promise<string> {
       if (!next) throw new Error('Redirect destination was not readable.');
       requireSafePublicTarget(next);
       requireAllowedHost(next);
-      return fetchHtml(next, redirectCount + 1);
+      return doFetchHtml(next, redirectCount + 1);
     }
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -208,14 +215,41 @@ async function fetchHtml(url: string, redirectCount = 0): Promise<string> {
   }
 }
 
+async function fetchHtml(url: string, redirectCount = 0): Promise<string> {
+  const safeUrl = normalize(url);
+  if (!safeUrl) throw new Error('Invalid URL. Use a complete public website address.');
+  const key = cacheKey('html', safeUrl);
+  if (useCrawlCache && redirectCount === 0) {
+    const cached = await cacheGet<string>(key, crawlCacheTtl);
+    if (cached !== null) return cached;
+  }
+  const html = await doFetchHtml(safeUrl, redirectCount);
+  if (useCrawlCache && redirectCount === 0) {
+    await cacheSet(key, html, crawlCacheTtl);
+  }
+  return html;
+}
+
 function pageFromHtml(url: string, html: string): CrawledPage {
   const $ = cheerio.load(html);
   const siteName = clean($('meta[property="og:site_name"]').attr('content') || $('meta[name="application-name"]').attr('content') || '');
   const organizationName = clean(organizationNameFromJsonLd($) || $('[itemtype*="Organization"] [itemprop="name"]').first().text() || logoAlt($) || '');
   $('script,style,nav,footer,header,noscript,svg,form').remove();
+
+  const altTexts: string[] = [];
+  if (extractImageAltText) {
+    $('img[alt]').each((_, el) => {
+      const alt = $(el).attr('alt') || '';
+      if (alt.trim() && alt.length > 3 && alt.length < 300 && !/logo|icon|button|banner|thumbnail/i.test(alt)) {
+        altTexts.push(alt.trim());
+      }
+    });
+  }
+
   const title = clean($('title').first().text() || $('h1').first().text() || url);
   const headings = $('h1,h2,h3').map((_, el) => clean($(el).text())).get().filter(Boolean).join(' | ');
-  const body = clean(`${headings} ${$('body').text()}`);
+  const imageContent = altTexts.length ? ` [image descriptions: ${altTexts.slice(0, 20).join('; ')}]` : '';
+  const body = clean(`${headings}${imageContent} ${$('body').text()}`);
   const text = body.slice(0, 32000);
   return { url, title, siteName, organizationName, text, excerpt: body.slice(0, 900), ...classifyPage(url, title, text) };
 }
@@ -250,6 +284,22 @@ export async function crawlSite(startUrl: string, maxPages = 24): Promise<Crawle
     if (pages.length >= maxPages) break;
     if (seen.has(url)) continue;
     seen.add(url);
+
+    if (extractPdfContent && hasPdfExtension(url)) {
+      try {
+        const pdf = await crawlPdfUrl(url);
+        if (pdf && pdf.text.length > 100) {
+          pages.push({
+            url, title: `PDF: ${url.split('/').pop() || url}`,
+            siteName: '', organizationName: '',
+            text: pdf.text, excerpt: pdf.excerpt,
+            pageType: 'Service page', intelligenceScore: 15, evidenceSignals: ['pdf content'],
+          });
+          continue;
+        }
+      } catch { /* continue to normal crawl fallback */ }
+    }
+
     try {
       const nextHtml = await fetchHtml(url);
       if (!nextHtml) continue;

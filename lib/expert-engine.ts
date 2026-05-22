@@ -2,15 +2,52 @@ import type { CompetitorAnalysis, CompetitorScore, ExpertBrief, ExpertFieldPlay,
 
 const expertVersion = 'foremost-expert-2026.05.18';
 
+// --- Evidence score weights ---
+const EVIDENCE_CONFIDENCE_HIGH = 34;
+const EVIDENCE_CONFIDENCE_MODERATE = 22;
+const EVIDENCE_CONFIDENCE_LOW = 12;
+const EVIDENCE_CONFIDENCE_NONE = 4;
+const EVIDENCE_STATUS_CLEAR = 28;
+const EVIDENCE_STATUS_MENTIONED = 20;
+const EVIDENCE_STATUS_RELATED = 15;
+const EVIDENCE_STATUS_UNCLEAR = 8;
+const EVIDENCE_STATUS_NOT_FOUND = 5;
+const EVIDENCE_SOURCE_BONUS = 16;
+const EVIDENCE_REVIEW_APPROVED = 14;
+const EVIDENCE_REVIEW_MANAGER = 6;
+
+// --- Priority thresholds ---
+const PRIORITY_CRITICAL = 85;
+const PRIORITY_HIGH = 68;
+const PRIORITY_MEDIUM = 40;
+
+// --- Expert score formula weights ---
+const EXPERT_BASE = 55;
+const EXPERT_THREAT_DIVISOR = 5;
+const EXPERT_FINDINGS_CAP = 18;
+const EXPERT_FINDINGS_DIVISOR = 10;
+const EXPERT_REVIEW_PENALTY_CAP = 18;
+const EXPERT_REVIEW_DIVISOR = 10;
+
+// --- Governance threshold ---
+const GOVERNANCE_RATIO_WARN = 0.35;
+
+// --- Limits ---
+const FIELD_PLAYS_MAX = 12;
+const WATCHLIST_MAX = 10;
+const FIELD_PLAYS_PER_COMPETITOR = 4;
+const BEST_GAPS_MAX = 3;
+const MATCHES_PER_COMPETITOR = 2;
+
 function clamp(value: number, min = 0, max = 100) {
   if (!Number.isFinite(value)) return min;
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
 function priorityFromScore(score: number): ExpertPriority {
-  if (score >= 85) return 'Critical';
-  if (score >= 68) return 'High';
-  if (score >= 40) return 'Medium';
+  if (score >= PRIORITY_CRITICAL) return 'Critical';
+  if (score >= PRIORITY_HIGH) return 'High';
+  if (score >= PRIORITY_MEDIUM) return 'Medium';
   return 'Low';
 }
 
@@ -18,15 +55,11 @@ function unique(items: string[]) {
   return [...new Set(items.map((item) => item.trim()).filter(Boolean))];
 }
 
-function serviceLabel(finding: Finding | SubserviceFinding) {
-  return 'subservice' in finding ? `${finding.serviceLine}: ${finding.subservice}` : finding.serviceLine;
-}
-
 function evidenceScore(finding: Finding | SubserviceFinding) {
-  const confidence = finding.confidence === 'High' ? 34 : finding.confidence === 'Moderate' ? 22 : finding.confidence === 'Low' ? 12 : 4;
-  const status = finding.competitorStatus === 'Clearly offered' ? 28 : finding.competitorStatus === 'Mentioned only' ? 20 : finding.competitorStatus === 'Related but not equivalent' ? 15 : finding.competitorStatus === 'Unclear' ? 8 : 5;
-  const source = finding.sourceUrl ? 16 : 0;
-  const review = finding.reviewStatus === 'Sales usable with evidence' || finding.reviewStatus === 'Approved for sales use' ? 14 : finding.reviewStatus === 'Manager review suggested' ? 6 : 0;
+  const confidence = finding.confidence === 'High' ? EVIDENCE_CONFIDENCE_HIGH : finding.confidence === 'Moderate' ? EVIDENCE_CONFIDENCE_MODERATE : finding.confidence === 'Low' ? EVIDENCE_CONFIDENCE_LOW : EVIDENCE_CONFIDENCE_NONE;
+  const status = finding.competitorStatus === 'Clearly offered' ? EVIDENCE_STATUS_CLEAR : finding.competitorStatus === 'Mentioned only' ? EVIDENCE_STATUS_MENTIONED : finding.competitorStatus === 'Related but not equivalent' ? EVIDENCE_STATUS_RELATED : finding.competitorStatus === 'Unclear' ? EVIDENCE_STATUS_UNCLEAR : EVIDENCE_STATUS_NOT_FOUND;
+  const source = finding.sourceUrl ? EVIDENCE_SOURCE_BONUS : 0;
+  const review = finding.reviewStatus === 'Sales usable with evidence' || finding.reviewStatus === 'Approved for sales use' ? EVIDENCE_REVIEW_APPROVED : finding.reviewStatus === 'Manager review suggested' ? EVIDENCE_REVIEW_MANAGER : 0;
   return clamp(confidence + status + source + review);
 }
 
@@ -130,9 +163,9 @@ function buildRecommendations(analyses: CompetitorAnalysis[], scores: Competitor
 
 function buildFieldPlays(analyses: CompetitorAnalysis[]): ExpertFieldPlay[] {
   return analyses.flatMap((analysis) => {
-    const opportunities = bestGaps(analysis.findings).slice(0, 3);
-    const matches = bestEvidence(analysis.findings).filter((finding) => finding.competitorStatus === 'Clearly offered').slice(0, 2);
-    const selected = [...opportunities, ...matches].slice(0, 4);
+    const opportunities = bestGaps(analysis.findings).slice(0, BEST_GAPS_MAX);
+    const matches = bestEvidence(analysis.findings).filter((finding) => finding.competitorStatus === 'Clearly offered').slice(0, MATCHES_PER_COMPETITOR);
+    const selected = [...opportunities, ...matches].slice(0, FIELD_PLAYS_PER_COMPETITOR);
 
     return selected.map((finding, index) => fieldPlay(`${analysis.id}-play-${index}`, {
       competitorName: analysis.name,
@@ -142,7 +175,7 @@ function buildFieldPlays(analyses: CompetitorAnalysis[]): ExpertFieldPlay[] {
         : `Referral source is evaluating options for ${finding.serviceLine} and public competitor evidence is limited or unclear.`,
       leadWith: finding.competitorStatus === 'Clearly offered'
         ? `Lead with Andwell's depth inside ${finding.serviceLine}, not a claim that ${analysis.name} lacks the service.`
-        : `Lead with Andwell's clearly promoted ${finding.serviceLine} capabilities and the patient situations where that depth matters.`,
+        : `Lead with Andwell's clearly promoted ${finding.serviceLine} capabilities and the patient situations where those capabilities matter.`,
       referralQuestion: `When you are thinking about ${finding.serviceLine}, what patient situation creates the most friction for your team right now?`,
       objectionResponse: finding.competitorStatus === 'Clearly offered'
         ? `That relationship makes sense. The question is whether this patient needs the specific depth Andwell can support inside ${finding.serviceLine}.`
@@ -150,7 +183,7 @@ function buildFieldPlays(analyses: CompetitorAnalysis[]): ExpertFieldPlay[] {
       proofNeeded: finding.sourceUrl ? `Use this source before field use: ${finding.sourceUrl}` : 'Confirm with approved internal proof or manager review before using as a competitive claim.',
       avoidSaying: finding.avoidSaying
     }));
-  }).slice(0, 12);
+  }).slice(0, FIELD_PLAYS_MAX);
 }
 
 function buildWatchlist(scores: CompetitorScore[], analyses: CompetitorAnalysis[]): ExpertWatchItem[] {
@@ -178,7 +211,7 @@ function buildWatchlist(scores: CompetitorScore[], analyses: CompetitorAnalysis[
     }
   });
 
-  return items.slice(0, 10);
+  return items.slice(0, WATCHLIST_MAX);
 }
 
 export function buildExpertBrief(analyses: CompetitorAnalysis[], scores: CompetitorScore[], allFindings: Finding[], allSubserviceFindings: SubserviceFinding[], humanReviewItems: number): ExpertBrief {
@@ -187,7 +220,7 @@ export function buildExpertBrief(analyses: CompetitorAnalysis[], scores: Competi
   const averageThreat = scores.length
     ? scores.reduce((sum, score) => sum + score.serviceLineMatchScore + score.subserviceDepthScore + score.evidenceStrengthScore - score.reviewRiskScore, 0) / scores.length
     : 0;
-  const expertScore = clamp(55 + averageThreat / 5 + Math.min(18, allFindings.length / 10) - Math.min(18, humanReviewItems / 10));
+  const expertScore = clamp(EXPERT_BASE + averageThreat / EXPERT_THREAT_DIVISOR + Math.min(EXPERT_FINDINGS_CAP, allFindings.length / EXPERT_FINDINGS_DIVISOR) - Math.min(EXPERT_REVIEW_PENALTY_CAP, humanReviewItems / EXPERT_REVIEW_DIVISOR));
   const bestOpportunity = opportunities[0];
   const topThreat = threats[0];
   const salesReady = allFindings.filter((finding) => finding.reviewStatus === 'Sales usable with evidence' || finding.reviewStatus === 'Approved for sales use').length;
@@ -211,7 +244,7 @@ export function buildExpertBrief(analyses: CompetitorAnalysis[], scores: Competi
     fastestFieldMove: topGaps[0]
       ? `Use ${topGaps[0].serviceLine} as the fastest field positioning opportunity, but keep the wording grounded in reviewed public evidence.`
       : 'Use the highest confidence shared service lines as coaching anchors until more competitor gaps are reviewed.',
-    governanceWarning: reviewRatio > 0.35
+    governanceWarning: reviewRatio > GOVERNANCE_RATIO_WARN
       ? 'High review load detected. Do not publish broad battlecards until the highest value claims are approved, edited, or rejected.'
       : 'Governance load is manageable, but every not found publicly statement still requires careful wording.',
     strongestThreats: threats.map((score) => `${score.competitorName}: ${score.threatLevel}, ${score.serviceLineMatchScore}% service overlap, ${score.subserviceDepthScore}% depth`),

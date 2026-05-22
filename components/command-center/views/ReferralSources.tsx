@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Badge, Panel, SectionGroup, ExpandableSection } from '../Shared';
+import { Badge, Panel, SectionGroup } from '../Shared';
 import { getReferralProfile, getReferralSourceTypes } from '../../../lib/referral-sources';
-import type { IntelligenceReport, ReferralSourceType, ReferralSourceProfile } from '../../../lib/types';
+import type { ReferralSourceType } from '../../../lib/types';
 
-export function ReferralSources({ currentReport }: { currentReport: IntelligenceReport | null }) {
+export function ReferralSources() {
   const [selectedType, setSelectedType] = useState<ReferralSourceType>('Hospital');
 
   const sourceTypes = useMemo(() => getReferralSourceTypes(), []);

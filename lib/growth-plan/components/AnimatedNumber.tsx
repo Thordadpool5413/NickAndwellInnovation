@@ -38,12 +38,13 @@ export default function AnimatedNumber({ value = 0, duration = durations.normal,
     };
 
     animationId = requestAnimationFrame(animate);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPrevValue(value);
 
     return () => {
       if (animationId) cancelAnimationFrame(animationId);
     };
-  }, [value, duration, easing]);
+  }, [value, duration, easing, prevValue]);
 
   return <span className={className}>{typeof format === 'function' ? format(displayValue) : displayValue.toLocaleString()}</span>;
 }

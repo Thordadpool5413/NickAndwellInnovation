@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Badge, Panel, SectionGroup, ExpandableSection } from '../Shared';
+import { Badge, Panel, SectionGroup } from '../Shared';
 import { categorizeAllClaims, filterApprovedClaims, claimStatusTone } from '../../../lib/claim-governance';
 import type { IntelligenceReport, ClaimStatus } from '../../../lib/types';
 

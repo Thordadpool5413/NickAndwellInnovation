@@ -3,7 +3,7 @@ export interface Scenario {
   hhCapture: number[];
   woundCapture: number[];
   therapyCapture: number[];
-  marginOverrides: Record<string, never>;
+  marginOverrides: Record<string, number>;
 }
 
 export interface StaffingRatio {

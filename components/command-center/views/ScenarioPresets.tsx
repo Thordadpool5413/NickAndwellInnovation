@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from 'react';
 import { Badge, Panel, SectionGroup } from '../Shared';
 import { scenarioPresets, buildComparison } from '../../../lib/scenario-presets';
-import { buildGrowthRows, summarizeGrowth } from '../../../lib/growth-plan';
+import { summarizeGrowth } from '../../../lib/growth-plan';
 import { money, whole } from '../../../lib/command-center/utils';
-import type { GrowthScenario, GrowthRow, GrowthTotals } from '../../../lib/growth-plan';
+import type { GrowthScenario, GrowthRow } from '../../../lib/growth-plan';
 
 export function ScenarioPresets({ scenario, setScenario, growthRows }: { scenario: GrowthScenario; setScenario: (value: GrowthScenario | ((current: GrowthScenario) => GrowthScenario)) => void; growthRows: GrowthRow[] }) {
   const [selectedIds, setSelectedIds] = useState<string[]>(['base-case', 'aggressive', 'staffing-constrained']);
@@ -72,7 +72,7 @@ export function ScenarioPresets({ scenario, setScenario, growthRows }: { scenari
         <Panel title="Y1 revenue"><strong style={{ fontSize: '24px' }}>{money(currentTotals.revenue[0])}</strong><p className="text-xs">{whole(currentTotals.starts[0])} starts</p></Panel>
         <Panel title="Y3 revenue"><strong style={{ fontSize: '24px' }}>{money(currentTotals.revenue[2])}</strong><p className="text-xs">{whole(currentTotals.referrals[2])} referrals</p></Panel>
         <Panel title="Total contribution"><strong style={{ fontSize: '24px' }}>{money(currentTotals.totalContribution)}</strong></Panel>
-        <Panel title="Total referrals"><strong style={{ fontSize: '24px' }}>{whole(currentTotals.totalReferrals)}</strong></Panel>
+        <Panel title="Total referrals"><strong style={{ fontSize: '24px' }}>{whole(currentTotals.referrals.reduce((a, b) => a + b, 0))}</strong></Panel>
       </div>
     </SectionGroup>
 

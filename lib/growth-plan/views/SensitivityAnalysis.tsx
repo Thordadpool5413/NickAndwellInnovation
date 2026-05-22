@@ -5,9 +5,8 @@ import Card from "../components/Card";
 import Metric from "../components/Metric";
 import SectionHeader from "../components/SectionHeader";
 import { useDarkMode } from "../components/DarkModeContext";
-import { COLORS, GrowthRow } from "../data/constants";
-import { getSensitivityAnalysis } from "../utils/calculations";
-import { currency, percent } from "../utils/formatters";
+import { getSensitivityAnalysis, type CountyMathRow } from "../utils/calculations";
+import { currency } from "../utils/formatters";
 
 interface TornadoBarProps {
   variable: {
@@ -75,7 +74,7 @@ function TornadoBar({ variable, maxRange, dark }: TornadoBarProps) {
 }
 
 interface SensitivityAnalysisProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
 }
 
 export default function SensitivityAnalysis({ rows }: SensitivityAnalysisProps) {

@@ -1,6 +1,6 @@
 interface CMSDataEntry {
   ffs: number;
-  hh: { prov: number; users: number; rate: number; pay: number; ppu: number };
+  hh: { prov: number; users: number; rate?: number; pay?: number; ppu: number };
   hos: { prov: number; users: number; ppu: number };
 }
 
