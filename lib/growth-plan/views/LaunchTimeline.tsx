@@ -5,8 +5,9 @@ import Card from "../components/Card";
 import Metric from "../components/Metric";
 import SectionHeader from "../components/SectionHeader";
 import { useDarkMode } from "../components/DarkModeContext";
-import { COLORS, GrowthRow } from "../data/constants";
+import { COLORS } from "../data/constants";
 import { currency, number } from "../utils/formatters";
+import { type CountyMathRow } from "../utils/calculations";
 
 const PRIORITY_TIMELINE: Record<string, { startMonth: number; endMonth: number; color: string; phase: string }> = {
   "Priority 1": { startMonth: 1, endMonth: 12, color: COLORS.blue, phase: "Phase 1 — Immediate launch" },
@@ -24,7 +25,7 @@ const MILESTONES = [
 ];
 
 interface LaunchTimelineProps {
-  rows: GrowthRow[];
+  rows: CountyMathRow[];
 }
 
 export default function LaunchTimeline({ rows }: LaunchTimelineProps) {
